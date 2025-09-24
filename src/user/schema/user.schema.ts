@@ -25,6 +25,9 @@ export class User {
 
   @Prop({ required: true, type: String })
   password: string;
+
+  @Prop()
+  token: string;
 }
 
 export type UserDocument = HydratedDocument<User>;
