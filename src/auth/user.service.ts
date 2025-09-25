@@ -1,3 +1,4 @@
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './schema/user.schema';
@@ -8,6 +9,7 @@ import {
   generateToken,
   hashPassword,
   isPasswordSame,
+  sendEmail,
 } from 'src/utils/constant';
 import { errorMessages } from 'src/utils/response.messages';
 
@@ -15,6 +17,7 @@ import { errorMessages } from 'src/utils/response.messages';
 export class UserService {
   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
+  //Register
   async createUser(createUserDto: CreateUserDto): Promise<User | string> {
     const findIfUserAlreadyExist = await this.userModel.findOne({
       phone: createUserDto.phone,
@@ -37,6 +40,7 @@ export class UserService {
     }
   }
 
+  //Login
   async login(loginDto: LoginDto): Promise<string | User> {
     const { phone, password } = loginDto;
     try {
@@ -56,6 +60,34 @@ export class UserService {
       }
     } catch {
       return errorMessages.INTERNAL_SERVER_ERROR;
+    }
+  }
+
+  //forgot Password
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+    // check that associate user with email is exist or not?
+
+    const findUser = await this.userModel.findOne({
+      email: forgotPasswordDto.email,
+    });
+
+    const random4DigitOTP = Math.floor(100000 + Math.random() * 900000);
+
+    if (findUser) {
+      try {
+        await sendEmail(
+          'OTP for sst-ai',
+          'nayan@sevensquaretech.com',
+          random4DigitOTP.toString(),
+        );
+      } catch (error) {
+        console.log('error', error);
+        return 'error while send email';
+      }
+
+      return 'email send successfully';
+    } else {
+      return errorMessages.EMAIL_NOT_FOUND;
     }
   }
 }

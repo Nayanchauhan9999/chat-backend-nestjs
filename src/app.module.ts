@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ChatModule } from './chat/chat.module';
 import { MongooseModule } from '@nestjs/mongoose';
-import { UserModule } from './user/user.module';
+import { UserModule } from './auth/user.module';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
