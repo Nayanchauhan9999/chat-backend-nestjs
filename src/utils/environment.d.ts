@@ -7,6 +7,7 @@ declare global {
       JWT_SECRET_KEY: string;
       NODEMAILER_HOST: string;
       NODEMAILER_PORT: number;
+      NODEMAILER_EMAIL_FROM: string;
     }
   }
 }

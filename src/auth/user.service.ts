@@ -1,5 +1,5 @@
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './schema/user.schema';
 import { InjectModel } from '@nestjs/mongoose';
@@ -9,22 +9,30 @@ import {
   generateToken,
   hashPassword,
   isPasswordSame,
-  sendEmail,
 } from 'src/utils/constant';
 import { errorMessages } from 'src/utils/response.messages';
+import { MailService } from 'src/services/mail.service';
+import { CommonService } from 'src/services/common.service';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<User>,
+    private mailService: MailService,
+    private commonService: CommonService,
+  ) {}
 
   //Register
-  async createUser(createUserDto: CreateUserDto): Promise<User | string> {
+  async createUser(createUserDto: CreateUserDto): Promise<User | void> {
     const findIfUserAlreadyExist = await this.userModel.findOne({
       phone: createUserDto.phone,
     });
 
     if (findIfUserAlreadyExist) {
-      return errorMessages.USER_ALREADY_EXIST;
+      return this.commonService.sendError(
+        errorMessages.USER_ALREADY_EXIST,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const createdUser = new this.userModel(createUserDto);
@@ -35,13 +43,13 @@ export class UserService {
       const token = generateToken(JSON.stringify(createdUser));
       createdUser.token = token;
       return await createdUser.save();
-    } catch (error) {
-      return JSON.stringify(error);
+    } catch {
+      return this.commonService.sendError();
     }
   }
 
   //Login
-  async login(loginDto: LoginDto): Promise<string | User> {
+  async login(loginDto: LoginDto): Promise<User | void> {
     const { phone, password } = loginDto;
     try {
       const findUser = await this.userModel.findOne({ phone: phone });
@@ -53,41 +61,46 @@ export class UserService {
           await findUser.save();
           return findUser;
         } else {
-          return errorMessages.INVALID_PASSWORD;
+          return this.commonService.sendError(
+            errorMessages.INVALID_PASSWORD,
+            HttpStatus.BAD_REQUEST,
+          );
         }
       } else {
-        return errorMessages.USER_NOT_FOUND;
+        return this.commonService.sendError(
+          errorMessages.USER_NOT_FOUND,
+          HttpStatus.BAD_REQUEST,
+        );
       }
     } catch {
-      return errorMessages.INTERNAL_SERVER_ERROR;
+      return this.commonService.sendError();
     }
   }
 
   //forgot Password
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
-    // check that associate user with email is exist or not?
-
     const findUser = await this.userModel.findOne({
       email: forgotPasswordDto.email,
     });
 
-    const random4DigitOTP = Math.floor(100000 + Math.random() * 900000);
+    const random6DigitOTP = Math.floor(100000 + Math.random() * 900000);
 
     if (findUser) {
       try {
-        await sendEmail(
-          'OTP for sst-ai',
+        await this.mailService.sendOtpMail(
           'nayan@sevensquaretech.com',
-          random4DigitOTP.toString(),
+          random6DigitOTP,
         );
       } catch (error) {
         console.log('error', error);
         return 'error while send email';
       }
-
-      return 'email send successfully';
+      return random6DigitOTP;
     } else {
-      return errorMessages.EMAIL_NOT_FOUND;
+      return this.commonService.sendError(
+        errorMessages.EMAIL_NOT_FOUND,
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 }

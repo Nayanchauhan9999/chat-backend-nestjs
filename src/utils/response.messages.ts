@@ -8,4 +8,6 @@ export const errorMessages = {
 
 export const successMessages = {
   PASSWORD_CHANGE_SUCCESSFULLY: 'Password change successfully',
+  OTP_SEND_SUCCESSFULLY: 'OTP send successfully',
+  LOGIN_SUCCESSFULLY: 'Login successfully',
 };
