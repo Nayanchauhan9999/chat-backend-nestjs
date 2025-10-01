@@ -2,7 +2,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { errorMessages } from 'src/utils/response.messages';
 
 @Injectable()
-export class CommonService {
+export class SharedService {
   sendSuccess<T = any>(
     message: string,
     statusCode: HttpStatus = HttpStatus.OK,

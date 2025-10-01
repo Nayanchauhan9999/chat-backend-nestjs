@@ -12,14 +12,14 @@ import {
 } from 'src/utils/constant';
 import { errorMessages } from 'src/utils/response.messages';
 import { MailService } from 'src/services/mail.service';
-import { CommonService } from 'src/services/common.service';
+import { SharedService } from 'src/services/shared.service';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     private mailService: MailService,
-    private commonService: CommonService,
+    private sharedService: SharedService,
   ) {}
 
   //Register
@@ -29,7 +29,7 @@ export class UserService {
     });
 
     if (findIfUserAlreadyExist) {
-      return this.commonService.sendError(
+      return this.sharedService.sendError(
         errorMessages.USER_ALREADY_EXIST,
         HttpStatus.BAD_REQUEST,
       );
@@ -44,7 +44,7 @@ export class UserService {
       createdUser.token = token;
       return await createdUser.save();
     } catch {
-      return this.commonService.sendError();
+      return this.sharedService.sendError();
     }
   }
 
@@ -61,19 +61,19 @@ export class UserService {
           await findUser.save();
           return findUser;
         } else {
-          return this.commonService.sendError(
+          return this.sharedService.sendError(
             errorMessages.INVALID_PASSWORD,
             HttpStatus.BAD_REQUEST,
           );
         }
       } else {
-        return this.commonService.sendError(
+        return this.sharedService.sendError(
           errorMessages.USER_NOT_FOUND,
           HttpStatus.BAD_REQUEST,
         );
       }
     } catch {
-      return this.commonService.sendError();
+      return this.sharedService.sendError();
     }
   }
 
@@ -97,7 +97,7 @@ export class UserService {
       }
       return random6DigitOTP;
     } else {
-      return this.commonService.sendError(
+      return this.sharedService.sendError(
         errorMessages.EMAIL_NOT_FOUND,
         HttpStatus.BAD_REQUEST,
       );
