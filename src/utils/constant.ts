@@ -1,6 +1,5 @@
 import bcrypt from 'bcrypt';
 import { Response } from 'express';
-import jwt from 'jsonwebtoken';
 
 async function hashPassword(
   password: string,
@@ -24,8 +23,4 @@ async function isPasswordSame(
   }
 }
 
-function generateToken(payload: string | object | Buffer<ArrayBufferLike>) {
-  return jwt.sign(payload, process.env.JWT_SECRET_KEY);
-}
-
-export { hashPassword, isPasswordSame, generateToken };
+export { hashPassword, isPasswordSame };

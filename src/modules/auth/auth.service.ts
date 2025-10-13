@@ -1,65 +1,76 @@
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
-import { User } from './schema/user.schema';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
 import { LoginDto } from './dto/login.dto';
-import {
-  generateToken,
-  hashPassword,
-  isPasswordSame,
-} from 'src/utils/constant';
+import { hashPassword, isPasswordSame } from 'src/utils/constant';
 import { errorMessages } from 'src/utils/response.messages';
 import { MailService } from 'src/services/mail.service';
 import { SharedService } from 'src/services/shared.service';
+import { User } from 'generated/prisma';
+import { PrismaService } from 'src/services/prisma.service';
+import { JwtService } from '@nestjs/jwt';
+import {} from 'nest-winston';
+import { Logger } from 'winston';
 
 @Injectable()
 export class UserService {
   constructor(
-    @InjectModel(User.name) private userModel: Model<User>,
     private mailService: MailService,
     private sharedService: SharedService,
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+    @Inject('winston') private logger: Logger,
   ) {}
 
   //Register
   async createUser(createUserDto: CreateUserDto): Promise<User | void> {
-    const findIfUserAlreadyExist = await this.userModel.findOne({
-      phone: createUserDto.phone,
+    //Find existing user
+    const findUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: createUserDto.email }, { phone: createUserDto.phone }],
+      },
     });
 
-    if (findIfUserAlreadyExist) {
+    if (findUser) {
       return this.sharedService.sendError(
         errorMessages.USER_ALREADY_EXIST,
         HttpStatus.BAD_REQUEST,
       );
     }
 
-    const createdUser = new this.userModel(createUserDto);
-
     try {
       const hashedPassword: string = await hashPassword(createUserDto.password);
-      createdUser.password = hashedPassword;
-      const token = generateToken(JSON.stringify(createdUser));
-      createdUser.token = token;
-      return await createdUser.save();
-    } catch {
+      const token = this.jwtService.sign(JSON.stringify(createUserDto));
+      return await this.prisma.user.create({
+        data: {
+          ...createUserDto,
+          password: hashedPassword,
+          token: token,
+        },
+      });
+    } catch (error) {
+      this.logger.log('error', error);
       return this.sharedService.sendError();
     }
   }
 
   //Login
   async login(loginDto: LoginDto): Promise<User | void> {
-    const { phone, password } = loginDto;
+    const { phone, password, email } = loginDto;
+
     try {
-      const findUser = await this.userModel.findOne({ phone: phone });
+      const findUser = await this.prisma.user.findFirst({
+        where: { OR: [{ phone }, { email }] },
+      });
 
       if (findUser) {
         if (await isPasswordSame(password, findUser.password)) {
-          const token = generateToken(JSON.stringify(findUser));
-          findUser.token = token;
-          await findUser.save();
-          return findUser;
+          const token = this.jwtService.sign(JSON.stringify(loginDto));
+          const updatedUser = await this.prisma.user.update({
+            where: { id: findUser.id },
+            data: { token: token },
+          });
+          return updatedUser;
         } else {
           return this.sharedService.sendError(
             errorMessages.INVALID_PASSWORD,
@@ -72,15 +83,16 @@ export class UserService {
           HttpStatus.BAD_REQUEST,
         );
       }
-    } catch {
+    } catch (error) {
+      this.logger.log('error', error);
       return this.sharedService.sendError();
     }
   }
 
   //forgot Password
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
-    const findUser = await this.userModel.findOne({
-      email: forgotPasswordDto.email,
+    const findUser = await this.prisma.user.findFirst({
+      where: { email: forgotPasswordDto.email },
     });
 
     const random6DigitOTP = Math.floor(100000 + Math.random() * 900000);

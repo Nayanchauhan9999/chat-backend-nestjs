@@ -1,19 +1,39 @@
 import { Module } from '@nestjs/common';
 import { ChatModule } from './modules/chat/chat.module';
-import { MongooseModule } from '@nestjs/mongoose';
-import { UserModule } from './modules/auth/user.module';
+import { UserModule } from './modules/auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { EmailModule } from './modules/email.module';
-import { CommonModule } from './modules/shared.module';
+import { SharedModule } from './modules/shared.module';
+import { WinstonModule } from 'nest-winston';
+import winston from 'winston';
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb://127.0.0.1:27017/sst-ai'),
     ConfigModule.forRoot({ envFilePath: ['.env.local'], isGlobal: true }),
+    WinstonModule.forRoot({
+      format: winston.format.combine(
+        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        winston.format.json(),
+      ),
+      transports: [
+        new winston.transports.File({
+          level: 'error',
+          filename: 'logs/error.log',
+        }),
+        new winston.transports.File({
+          level: 'warn',
+          filename: 'logs/warn.log',
+        }),
+        new winston.transports.File({
+          level: 'info',
+          filename: 'logs/info.log',
+        }),
+      ],
+    }),
     ChatModule,
     UserModule,
     EmailModule,
-    CommonModule,
+    SharedModule,
   ],
 })
 export class AppModule {}
