@@ -8,12 +8,14 @@ import { MailService } from 'src/services/mail.service';
 import { SharedService } from 'src/services/shared.service';
 import { User } from 'generated/prisma';
 import { PrismaService } from 'src/services/prisma.service';
-import { JwtService } from '@nestjs/jwt';
-import {} from 'nest-winston';
+import { JsonWebTokenError, JwtService } from '@nestjs/jwt';
 import { Logger } from 'winston';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
-export class UserService {
+export class AuthService {
   constructor(
     private mailService: MailService,
     private sharedService: SharedService,
@@ -58,35 +60,38 @@ export class UserService {
   async login(loginDto: LoginDto): Promise<User | void> {
     const { phone, password, email } = loginDto;
 
-    try {
-      const findUser = await this.prisma.user.findFirst({
-        where: { OR: [{ phone }, { email }] },
-      });
+    const findUser = await this.prisma.user.findFirst({
+      where: { OR: [{ phone }, { email }] },
+    });
 
-      if (findUser) {
-        if (await isPasswordSame(password, findUser.password)) {
-          const token = this.jwtService.sign(JSON.stringify(loginDto));
-          const updatedUser = await this.prisma.user.update({
-            where: { id: findUser.id },
-            data: { token: token },
-          });
-          return updatedUser;
-        } else {
-          return this.sharedService.sendError(
-            errorMessages.INVALID_PASSWORD,
-            HttpStatus.BAD_REQUEST,
-          );
-        }
-      } else {
-        return this.sharedService.sendError(
-          errorMessages.USER_NOT_FOUND,
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-    } catch (error) {
-      this.logger.log('error', error);
-      return this.sharedService.sendError();
+    // ❌ No user found
+    if (!findUser) {
+      return this.sharedService.sendError(
+        errorMessages.USER_NOT_FOUND,
+        HttpStatus.BAD_REQUEST,
+      );
     }
+
+    const isPasswordMatch = await isPasswordSame(password, findUser.password);
+
+    // 🔐 Check password
+    if (!isPasswordMatch) {
+      return this.sharedService.sendError(
+        errorMessages.INVALID_PASSWORD,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const token = this.jwtService.sign({
+      id: findUser.id,
+      email: findUser.email,
+    });
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: findUser.id },
+      data: { token: token },
+    });
+    return updatedUser;
   }
 
   //forgot Password
@@ -95,24 +100,108 @@ export class UserService {
       where: { email: forgotPasswordDto.email },
     });
 
+    if (!findUser) {
+      return this.sharedService.sendError(
+        errorMessages.EMAIL_NOT_FOUND,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const random6DigitOTP = Math.floor(100000 + Math.random() * 900000);
 
+    try {
+      await this.mailService.sendOtpMail(
+        'nayan@sevensquaretech.com',
+        random6DigitOTP,
+      );
+
+      await this.prisma.otp.create({
+        data: {
+          otp: random6DigitOTP,
+          userId: findUser.id,
+          expireAt: new Date(Date.now() + 30 * 1000),
+        },
+      });
+    } catch {
+      return this.sharedService.sendError(errorMessages.SOMETHING_WENT_WRONG);
+    }
+    return random6DigitOTP;
+  }
+
+  //Verify OTP
+  async verifyOTP(verifyOtpDto: VerifyOtpDto) {
+    if (isNaN(+verifyOtpDto.otp)) {
+      return this.sharedService.sendError(
+        errorMessages.PLEASE_ENTER_VALID_OTP,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    //Find user by email from @User table
+    const findUser = await this.prisma.user.findUnique({
+      where: { email: verifyOtpDto.email },
+    });
+
+    //Find OTP from otp table
+    const findOtp = await this.prisma.otp.findFirst({
+      where: { userId: findUser?.id, otp: +verifyOtpDto.otp },
+    });
+
     if (findUser) {
-      try {
-        await this.mailService.sendOtpMail(
-          'nayan@sevensquaretech.com',
-          random6DigitOTP,
+      const isOtpSame: boolean = +verifyOtpDto.otp === findOtp?.otp;
+      if (isOtpSame) {
+        //Generate jwt token with expiry of 10 min
+        const resetToken = this.jwtService.sign(findUser, { expiresIn: '10m' });
+
+        //Delete otp from database
+        await this.prisma.otp.delete({ where: { id: findOtp?.id } });
+        return resetToken;
+      } else {
+        return this.sharedService.sendError(
+          errorMessages.PLEASE_ENTER_VALID_OTP,
+          HttpStatus.BAD_REQUEST,
         );
-      } catch (error) {
-        console.log('error', error);
-        return 'error while send email';
       }
-      return random6DigitOTP;
     } else {
       return this.sharedService.sendError(
         errorMessages.EMAIL_NOT_FOUND,
         HttpStatus.BAD_REQUEST,
       );
+    }
+  }
+
+  //Reset Password
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    const user = this.jwtService.verify<User>(resetPasswordDto.resetToken);
+
+    try {
+      const encryptedPassword = await hashPassword(
+        resetPasswordDto.newPassword,
+        12,
+      );
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { password: encryptedPassword },
+      });
+    } catch (error) {
+      if (error instanceof JsonWebTokenError) {
+        console.log('JsonWebTokenError', error);
+      }
+      this.logger.log('error', JSON.stringify(error));
+      this.sharedService.sendError(errorMessages.SOMETHING_WENT_WRONG);
+    }
+  }
+
+  // OTP will expire in 30 seconds and remove from database in 1 minute
+  @Cron(CronExpression.EVERY_MINUTE) // Runs every minute
+  async deleteOtp() {
+    try {
+      await this.prisma.otp.deleteMany({
+        where: { expireAt: { lt: new Date() } },
+      });
+    } catch (error) {
+      console.log('error while delete otp', error);
     }
   }
 }

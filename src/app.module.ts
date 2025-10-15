@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ChatModule } from './modules/chat/chat.module';
-import { UserModule } from './modules/auth/auth.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { EmailModule } from './modules/email.module';
 import { SharedModule } from './modules/shared.module';
 import { WinstonModule } from 'nest-winston';
 import winston from 'winston';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -30,10 +31,13 @@ import winston from 'winston';
         }),
       ],
     }),
+    ScheduleModule.forRoot(),
     ChatModule,
-    UserModule,
+    AuthModule,
     EmailModule,
     SharedModule,
   ],
+  providers: [],
+  exports: [],
 })
 export class AppModule {}

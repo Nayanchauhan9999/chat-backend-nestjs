@@ -15,11 +15,20 @@ datasource db {
 }
 
 model User {
-  id        Int     @id @unique @default(autoincrement())
+  id        String   @id @default(uuid())
   firstName String
   lastName  String
-  email     String  @unique
-  phone     String  @unique
+  email     String   @unique
+  phone     String   @unique
   password  String
   token     String?
+  createdAt DateTime @default(now())
+}
+
+model Otp {
+  id        Int      @id @default(autoincrement())
+  otp       Int
+  userId    String
+  createdAt DateTime @default(now())
+  expireAt  DateTime
 }

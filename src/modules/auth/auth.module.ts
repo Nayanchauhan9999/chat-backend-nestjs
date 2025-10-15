@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
-import { UserController } from './auth.controller';
-import { UserService } from './auth.service';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
 import { JwtModule } from '@nestjs/jwt';
 
 @Module({
-  controllers: [UserController],
-  providers: [UserService],
-  exports: [UserModule],
+  controllers: [AuthController],
+  providers: [AuthService],
+  exports: [AuthModule],
   imports: [
     JwtModule.register({
       global: true,
@@ -14,4 +14,4 @@ import { JwtModule } from '@nestjs/jwt';
     }),
   ],
 })
-export class UserModule {}
+export class AuthModule {}
