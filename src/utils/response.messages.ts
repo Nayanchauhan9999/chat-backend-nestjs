@@ -7,6 +7,7 @@ export const errorMessages = {
   PLEASE_ENTER_VALID_OTP: 'Please enter valid otp',
   SOMETHING_WENT_WRONG: 'Something went wrong',
   INVALID_TOKEN_PROVIDED: 'Invalid token provided',
+  TOKEN_EXPIRED: 'Token expired',
 };
 
 export const successMessages = {

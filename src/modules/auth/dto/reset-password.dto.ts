@@ -7,8 +7,8 @@ export class ResetPasswordDto {
   @IsJWT({ message: errorMessages.INVALID_TOKEN_PROVIDED })
   resetToken: string;
 
-  @IsDefined({ message: 'New password is required' })
+  @IsDefined({ message: 'Password is required' })
   @IsNotEmpty()
   @IsString()
-  newPassword: string;
+  password: string;
 }

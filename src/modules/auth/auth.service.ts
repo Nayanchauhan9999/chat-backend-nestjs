@@ -8,7 +8,7 @@ import { MailService } from 'src/services/mail.service';
 import { SharedService } from 'src/services/shared.service';
 import { User } from 'generated/prisma';
 import { PrismaService } from 'src/services/prisma.service';
-import { JsonWebTokenError, JwtService } from '@nestjs/jwt';
+import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { Logger } from 'winston';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -82,10 +82,7 @@ export class AuthService {
       );
     }
 
-    const token = this.jwtService.sign({
-      id: findUser.id,
-      email: findUser.email,
-    });
+    const token = this.jwtService.sign(findUser);
 
     const updatedUser = await this.prisma.user.update({
       where: { id: findUser.id },
@@ -172,11 +169,32 @@ export class AuthService {
 
   //Reset Password
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
-    const user = this.jwtService.verify<User>(resetPasswordDto.resetToken);
+    let user: User;
+    user = this.jwtService.verify<User>(resetPasswordDto.resetToken);
 
     try {
+      user = this.jwtService.verify<User>(resetPasswordDto.resetToken);
+    } catch (error) {
+      if (error instanceof TokenExpiredError) {
+        this.sharedService.sendError(
+          errorMessages.TOKEN_EXPIRED,
+          HttpStatus.BAD_REQUEST,
+        );
+      } else if (error instanceof JsonWebTokenError) {
+        this.sharedService.sendError(
+          errorMessages.INVALID_TOKEN_PROVIDED,
+          HttpStatus.BAD_REQUEST,
+        );
+      } else {
+        this.sharedService.sendError(
+          errorMessages.SOMETHING_WENT_WRONG,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+    try {
       const encryptedPassword = await hashPassword(
-        resetPasswordDto.newPassword,
+        resetPasswordDto.password,
         12,
       );
 
