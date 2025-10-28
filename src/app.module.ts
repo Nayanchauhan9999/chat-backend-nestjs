@@ -7,6 +7,7 @@ import { SharedModule } from './modules/shared.module';
 import { WinstonModule } from 'nest-winston';
 import winston from 'winston';
 import { ScheduleModule } from '@nestjs/schedule';
+import { RolesModule } from './modules/roles/roles.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     AuthModule,
     EmailModule,
     SharedModule,
+    RolesModule,
   ],
   providers: [],
   exports: [],

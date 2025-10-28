@@ -93,6 +93,69 @@ export class AuthService {
 
   //forgot Password
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+    const random6DigitOTP = Math.floor(100000 + Math.random() * 900000);
+
+    const findUser = await this.prisma.user.findFirst({
+      where: { email: forgotPasswordDto.email },
+    });
+
+    // If email not found
+    if (!findUser) {
+      return this.sharedService.sendError(
+        errorMessages.EMAIL_NOT_FOUND,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // check is otp already send to the user
+    const findOtp = await this.prisma.otp.findFirst({
+      where: { userId: findUser.id },
+    });
+
+    // check is otp expire?
+    if (findOtp) {
+      const isOtpExpire = new Date() >= new Date(findOtp?.expireAt);
+
+      if (!isOtpExpire) {
+        return this.sharedService.sendError(
+          errorMessages.PLEASE_WAIT_BEFORE_REQUESTING_ANOTHER_OTP,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      await this.prisma.otp.update({
+        where: { userId: findUser.id },
+        data: {
+          createdAt: new Date(),
+          expireAt: new Date(Date.now() + 60 * 1000),
+          otp: random6DigitOTP,
+        },
+      });
+    } else {
+      await this.prisma.otp.create({
+        data: {
+          otp: random6DigitOTP,
+          userId: findUser.id,
+          expireAt: new Date(Date.now() + 60 * 1000),
+        },
+      });
+    }
+
+    try {
+      await this.mailService.sendOtpMail(
+        'nayan@sevensquaretech.com',
+        random6DigitOTP,
+      );
+    } catch {
+      return this.sharedService.sendError(errorMessages.SOMETHING_WENT_WRONG);
+    }
+    return random6DigitOTP;
+  }
+
+  //Resend OTP
+  async resendOTP(forgotPasswordDto: ForgotPasswordDto) {
+    const random6DigitOTP = Math.floor(100000 + Math.random() * 900000);
+
+    // 1️⃣ Check user exists
     const findUser = await this.prisma.user.findFirst({
       where: { email: forgotPasswordDto.email },
     });
@@ -104,21 +167,44 @@ export class AuthService {
       );
     }
 
-    const random6DigitOTP = Math.floor(100000 + Math.random() * 900000);
+    //Find OTP from otp table
+    const findOtp = await this.prisma.otp.findFirst({
+      where: { userId: findUser?.id },
+    });
+
+    if (findOtp) {
+      const isOtpExpire = new Date() >= new Date(findOtp?.expireAt);
+      if (!isOtpExpire) {
+        return this.sharedService.sendError(
+          errorMessages.PLEASE_WAIT_BEFORE_REQUESTING_ANOTHER_OTP,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Update existing OTP
+      await this.prisma.otp.update({
+        where: { userId: findUser.id },
+        data: {
+          expireAt: new Date(Date.now() + 60 * 1000),
+          otp: random6DigitOTP,
+          createdAt: new Date(),
+        },
+      });
+    } else {
+      await this.prisma.otp.create({
+        data: {
+          otp: random6DigitOTP,
+          userId: findUser.id,
+          expireAt: new Date(Date.now() + 60 * 1000),
+        },
+      });
+    }
 
     try {
       await this.mailService.sendOtpMail(
         'nayan@sevensquaretech.com',
         random6DigitOTP,
       );
-
-      await this.prisma.otp.create({
-        data: {
-          otp: random6DigitOTP,
-          userId: findUser.id,
-          expireAt: new Date(Date.now() + 30 * 1000),
-        },
-      });
     } catch {
       return this.sharedService.sendError(errorMessages.SOMETHING_WENT_WRONG);
     }
@@ -127,6 +213,7 @@ export class AuthService {
 
   //Verify OTP
   async verifyOTP(verifyOtpDto: VerifyOtpDto) {
+    //Check OTP is valid or not
     if (isNaN(+verifyOtpDto.otp)) {
       return this.sharedService.sendError(
         errorMessages.PLEASE_ENTER_VALID_OTP,
@@ -143,6 +230,23 @@ export class AuthService {
     const findOtp = await this.prisma.otp.findFirst({
       where: { userId: findUser?.id, otp: +verifyOtpDto.otp },
     });
+
+    //if otp is not found,it means otp expire, because of expired otp is been removed from database
+    if (!findOtp) {
+      return this.sharedService.sendError(
+        errorMessages.OTP_EXPIRED,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // check is otp expire?
+    const isOtpExpire = new Date() >= new Date(findOtp?.expireAt);
+    if (isOtpExpire) {
+      return this.sharedService.sendError(
+        errorMessages.OTP_EXPIRED,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
     if (findUser) {
       const isOtpSame: boolean = +verifyOtpDto.otp === findOtp?.otp;
@@ -170,10 +274,19 @@ export class AuthService {
   //Reset Password
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
     let user: User;
-    user = this.jwtService.verify<User>(resetPasswordDto.resetToken);
 
     try {
       user = this.jwtService.verify<User>(resetPasswordDto.resetToken);
+
+      const encryptedPassword = await hashPassword(
+        resetPasswordDto.password,
+        12,
+      );
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { password: encryptedPassword },
+      });
     } catch (error) {
       if (error instanceof TokenExpiredError) {
         this.sharedService.sendError(
@@ -192,27 +305,10 @@ export class AuthService {
         );
       }
     }
-    try {
-      const encryptedPassword = await hashPassword(
-        resetPasswordDto.password,
-        12,
-      );
-
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: { password: encryptedPassword },
-      });
-    } catch (error) {
-      if (error instanceof JsonWebTokenError) {
-        console.log('JsonWebTokenError', error);
-      }
-      this.logger.log('error', JSON.stringify(error));
-      this.sharedService.sendError(errorMessages.SOMETHING_WENT_WRONG);
-    }
   }
 
   // OTP will expire in 30 seconds and remove from database in 1 minute
-  @Cron(CronExpression.EVERY_MINUTE) // Runs every minute
+  @Cron(CronExpression.EVERY_10_SECONDS) // Runs every 10 minute
   async deleteOtp() {
     try {
       await this.prisma.otp.deleteMany({

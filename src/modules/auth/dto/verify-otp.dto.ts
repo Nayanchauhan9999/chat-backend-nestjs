@@ -6,6 +6,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { User } from 'generated/prisma';
+import { Transform } from 'class-transformer';
 
 export class VerifyOtpDto {
   @ValidateIf((o: User) => !o.phone)
@@ -22,6 +23,6 @@ export class VerifyOtpDto {
 
   @IsDefined({ message: 'OTP is required' })
   @IsNotEmpty({ message: 'OTP is required' })
-  @IsString()
+  @Transform(({ value }) => String(value))
   otp: string;
 }

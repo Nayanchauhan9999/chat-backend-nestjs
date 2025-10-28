@@ -14,21 +14,42 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+//User Model
 model User {
-  id        String   @id @default(uuid())
-  firstName String
-  lastName  String
-  email     String   @unique
-  phone     String   @unique
-  password  String
-  token     String?
-  createdAt DateTime @default(now())
+  id           String   @id @default(uuid())
+  firstName    String
+  lastName     String
+  email        String   @unique
+  phone        String   @unique
+  password     String
+  token        String?
+  isDeleted    Boolean  @default(false)
+  profileImage String?
+  role         Role?    @relation(fields: [roleId], references: [id])
+  createdAt    DateTime @default(now())
+  roleId       String?
 }
 
+//Otp Model
 model Otp {
   id        Int      @id @default(autoincrement())
   otp       Int
-  userId    String
+  userId    String   @unique
   createdAt DateTime @default(now())
   expireAt  DateTime
+}
+
+enum RoleType {
+  CUSTOM
+  FIXED
+}
+
+model Role {
+  id         String  @id @default(uuid())
+  roleName   String  @unique
+  isFixed    Boolean @default(false)
+  userCount  Int?    @default(0)
+  status     Boolean @default(true)
+  permission Json
+  User       User[]
 }

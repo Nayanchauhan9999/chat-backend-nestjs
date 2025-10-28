@@ -67,4 +67,15 @@ export class AuthController {
       HttpStatus.OK,
     );
   }
+
+  @Post('resend-otp')
+  @HttpCode(HttpStatus.OK)
+  async resendOTP(@Body() resendOtpDto: ForgotPasswordDto) {
+    const otp = await this.authService.resendOTP(resendOtpDto);
+    return this.sharedService.sendSuccess(
+      successMessages.OTP_SEND_SUCCESSFULLY,
+      HttpStatus.OK,
+      { otp },
+    );
+  }
 }

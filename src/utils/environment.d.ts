@@ -8,6 +8,7 @@ declare global {
       NODEMAILER_HOST: string;
       NODEMAILER_PORT: number;
       NODEMAILER_EMAIL_FROM: string;
+      ENVIRONMENT: 'Production' | 'Development';
     }
   }
 }

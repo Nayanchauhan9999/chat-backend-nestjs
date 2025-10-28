@@ -5,6 +5,10 @@ export const errorMessages = {
   USER_ALREADY_EXIST: 'User already exist',
   INTERNAL_SERVER_ERROR: 'Internal server error',
   PLEASE_ENTER_VALID_OTP: 'Please enter valid otp',
+  OTP_EXPIRED: 'Otp expired',
+  OTP_ALREADY_SENT: 'Otp already send',
+  PLEASE_WAIT_BEFORE_REQUESTING_ANOTHER_OTP:
+    'Please wait before requesting another OTP',
   SOMETHING_WENT_WRONG: 'Something went wrong',
   INVALID_TOKEN_PROVIDED: 'Invalid token provided',
   TOKEN_EXPIRED: 'Token expired',
