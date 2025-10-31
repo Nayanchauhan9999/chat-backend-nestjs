@@ -20,4 +20,7 @@ export const successMessages = {
   OTP_VERIFIED_SUCCESSFULLY: 'OTP Verified successfully',
   LOGIN_SUCCESSFULLY: 'Login successfully',
   PASSWORD_RESET_SUCCESSFULLY: 'Password reset successfully',
+
+  //users
+  USERS_FETCH_SUCCESSFULLY: 'Users fetch successfully',
 };

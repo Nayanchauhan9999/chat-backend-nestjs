@@ -16,17 +16,15 @@ datasource db {
 
 //User Model
 model User {
-  // id           String   @id @default(uuid())
+  id           String  @id @default(uuid())
   firstName    String
   lastName     String
-  email        String   @unique
-  phone        String   @unique
+  email        String  @unique
+  phone        String  @unique
   password     String
   token        String?
-  isDeleted    Boolean  @default(false)
+  isDeleted    Boolean @default(false)
   profileImage String?
-  role         Role?    @relation(fields: [roleId], references: [id])
-  createdAt    DateTime @default(now())
   roleId       String?
 }
 
@@ -51,5 +49,21 @@ model Role {
   userCount  Int?    @default(0)
   status     Boolean @default(true)
   permission Json
-  User       User[]
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  text       String
+  senderId   String
+  receiverId String
+  createdAt  DateTime @default(now())
+  roomId     String?
+}
+
+model Room {
+  id        String   @id @default(uuid())
+  isGroup   Boolean  @default(false)
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

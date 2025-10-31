@@ -10,6 +10,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { RolesModule } from './modules/roles/roles.module';
 import { AppService } from './app.service';
 import { AppController } from './app.controller';
+import { UsersModule } from './modules/users/users.module';
+import { ChatGateway } from './modules/chat/chat.gateways';
 
 @Module({
   imports: [
@@ -40,8 +42,9 @@ import { AppController } from './app.controller';
     EmailModule,
     SharedModule,
     RolesModule,
+    UsersModule,
   ],
-  providers: [AppService],
+  providers: [AppService, ChatGateway],
   controllers: [AppController],
   exports: [],
 })
