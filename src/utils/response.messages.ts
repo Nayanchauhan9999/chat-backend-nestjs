@@ -12,6 +12,7 @@ export const errorMessages = {
   SOMETHING_WENT_WRONG: 'Something went wrong',
   INVALID_TOKEN_PROVIDED: 'Invalid token provided',
   TOKEN_EXPIRED: 'Token expired',
+  TOKEN_IS_MISSING: 'Token is missing',
 };
 
 export const successMessages = {
@@ -23,4 +24,5 @@ export const successMessages = {
 
   //users
   USERS_FETCH_SUCCESSFULLY: 'Users fetch successfully',
+  FETCH_SUCCESSFULLY: 'Fetch successfully',
 };

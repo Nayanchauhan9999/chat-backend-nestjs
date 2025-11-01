@@ -16,16 +16,20 @@ datasource db {
 
 //User Model
 model User {
-  id           String  @id @default(uuid())
+  id           String    @id @default(uuid())
   firstName    String
   lastName     String
-  email        String  @unique
-  phone        String  @unique
+  email        String    @unique
+  phone        String    @unique
   password     String
   token        String?
-  isDeleted    Boolean @default(false)
+  isDeleted    Boolean   @default(false)
   profileImage String?
   roleId       String?
+  createdAt    DateTime  @default(now())
+  Room         Room?     @relation(fields: [roomId], references: [id])
+  roomId       String?
+  Message      Message[]
 }
 
 //Otp Model
@@ -52,18 +56,31 @@ model Role {
 }
 
 model Message {
-  id         String   @id @default(uuid())
-  text       String
-  senderId   String
-  receiverId String
-  createdAt  DateTime @default(now())
-  roomId     String?
+  id            String   @id @default(uuid())
+  text          String
+  senderId      String
+  senderDetails User?    @relation(fields: [senderId], references: [id])
+  createdAt     DateTime @default(now())
+  roomId        String?
+  Room          Room[]
+}
+
+enum RoomType {
+  PRIVATE
+  GROUP
+  CHANNEL
 }
 
 model Room {
-  id        String   @id @default(uuid())
-  isGroup   Boolean  @default(false)
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  String   @id @default(uuid())
+  roomType            RoomType @default(PRIVATE)
+  name                String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  unreadMessagesCount Int      @default(0)
+  createdBy           String
+
+  users       User[]
+  lastMessage Message? @relation(fields: [messageId], references: [id])
+  messageId   String?
 }

@@ -12,6 +12,7 @@ import { AppService } from './app.service';
 import { AppController } from './app.controller';
 import { UsersModule } from './modules/users/users.module';
 import { ChatGateway } from './modules/chat/chat.gateways';
+import { RoomModule } from './modules/room/room.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { ChatGateway } from './modules/chat/chat.gateways';
     SharedModule,
     RolesModule,
     UsersModule,
+    RoomModule,
   ],
   providers: [AppService, ChatGateway],
   controllers: [AppController],

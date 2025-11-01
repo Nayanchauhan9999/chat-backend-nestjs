@@ -1,3 +1,5 @@
+import { Request } from 'express';
+import { User } from 'generated/prisma';
 export {};
 
 declare global {
@@ -9,6 +11,12 @@ declare global {
       NODEMAILER_PORT: number;
       NODEMAILER_EMAIL_FROM: string;
       ENVIRONMENT: 'Production' | 'Development';
+    }
+  }
+
+  namespace Express {
+    interface Request {
+      user: User;
     }
   }
 }
