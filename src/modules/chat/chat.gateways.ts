@@ -4,6 +4,7 @@ import {
   MessageBody,
   WebSocketServer,
   ConnectedSocket,
+  WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import {
@@ -13,15 +14,18 @@ import {
 } from './interfaces/chat.interface';
 import { PrismaService } from 'src/services/prisma.service';
 import { RoomType } from 'generated/prisma';
+import { HttpStatus, UseFilters } from '@nestjs/common';
+import { WsExceptionsFilter } from 'src/common/filters/ws-exception.filter';
+import { errorMessages } from 'src/utils/response.messages';
 
 @WebSocketGateway({
   cors: {
     origin: '*', // frontend domain later
   },
 })
+@UseFilters(new WsExceptionsFilter())
 export class ChatGateway {
-  @WebSocketServer()
-  server: Server;
+  @WebSocketServer() server: Server;
 
   constructor(private prisma: PrismaService) {}
 
@@ -56,7 +60,10 @@ export class ChatGateway {
       });
       this.server.emit(SocketEventNames.ROOM_JOINED, { roomId: createRoom.id });
     } catch (error) {
-      console.log('error socket join_chat', error);
+      throw new WsException({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: errorMessages.SOMETHING_WENT_WRONG,
+      });
     }
   }
 }
