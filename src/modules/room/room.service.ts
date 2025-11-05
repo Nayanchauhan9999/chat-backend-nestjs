@@ -4,6 +4,8 @@ import { UpdateRoomDto } from './dto/update-room.dto';
 import { PrismaService } from 'src/services/prisma.service';
 import { SharedService } from 'src/services/shared.service';
 import { errorMessages } from 'src/utils/response.messages';
+import { DEFAULT_DATA_LENGTH, getPagination } from 'src/utils/constant';
+import { IPagination } from '../chat/interfaces/chat.interface';
 
 @Injectable()
 export class RoomService {
@@ -16,16 +18,31 @@ export class RoomService {
     return 'This action adds a new room';
   }
 
-  async findAll() {
+  async getRoomList(query: IPagination) {
     try {
-      return await this.prisma.room.findMany();
+      const take = query.take ? query.take : DEFAULT_DATA_LENGTH;
+      const rooms = await this.prisma.room.findMany();
+
+      const totalData = await this.prisma.room.count();
+
+      return {
+        docs: rooms,
+        pagination: getPagination({ pageNo: query.page, totalData, take }),
+      };
     } catch {
       return this.sharedService.sendError(errorMessages.SOMETHING_WENT_WRONG);
     }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} room`;
+  async getRoomById(id: string) {
+    try {
+      return await this.prisma.room.findUnique({
+        where: { id },
+        omit: { messageId: true },
+      });
+    } catch {
+      return this.sharedService.sendError(errorMessages.SOMETHING_WENT_WRONG);
+    }
   }
 
   update(id: number, updateRoomDto: UpdateRoomDto) {

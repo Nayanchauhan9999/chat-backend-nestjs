@@ -7,14 +7,19 @@ import {
   Param,
   Delete,
   HttpStatus,
+  UseGuards,
+  Query,
 } from '@nestjs/common';
 import { RoomService } from './room.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { SharedService } from 'src/services/shared.service';
 import { successMessages } from 'src/utils/response.messages';
+import { AuthGuard } from 'src/guards/auth.guard';
+import type { IPagination } from '../chat/interfaces/chat.interface';
 
 @Controller('room')
+@UseGuards(AuthGuard)
 export class RoomController {
   constructor(
     private readonly roomService: RoomService,
@@ -27,8 +32,8 @@ export class RoomController {
   }
 
   @Get('list')
-  async findAll() {
-    const roomList = await this.roomService.findAll();
+  async findAll(@Query() query: IPagination) {
+    const roomList = await this.roomService.getRoomList(query);
     return this.sharedService.sendSuccess(
       successMessages.FETCH_SUCCESSFULLY,
       HttpStatus.OK,
@@ -37,8 +42,14 @@ export class RoomController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.roomService.findOne(+id);
+  async getRoomById(@Param('id') id: string) {
+    console.log('id', id);
+    const room = await this.roomService.getRoomById(id);
+    return this.sharedService.sendSuccess(
+      successMessages.FETCH_SUCCESSFULLY,
+      HttpStatus.OK,
+      room,
+    );
   }
 
   @Patch(':id')

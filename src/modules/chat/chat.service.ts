@@ -1,6 +1,9 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/services/prisma.service';
 import { SharedService } from 'src/services/shared.service';
+import { IPagination } from './interfaces/chat.interface';
+import { DEFAULT_DATA_LENGTH, getPagination } from 'src/utils/constant';
+import { errorMessages } from 'src/utils/response.messages';
 // import { CreateChatDto } from './dto/create-chat.dto';
 // import OpenAI from 'openai';
 
@@ -27,23 +30,49 @@ export class ChatService {
   //   }
   // }
 
-  async getMessages(roomId: string) {
-    if (roomId) {
+  async getMessages(query: IPagination & { roomId: string }) {
+    if (!query.roomId) {
       return this.sharedService.sendError(
         'Room id required',
         HttpStatus.BAD_REQUEST,
       );
     }
+
+    const take = query.take ? query.take : DEFAULT_DATA_LENGTH;
+
+    if (isNaN(take)) {
+      this.sharedService.sendError(
+        errorMessages.INVALID_VALUE_PROVIDED,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     try {
-      const messages = this.prisma.message.findMany({
-        where: { roomId },
+      const messages = await this.prisma.message.findMany({
+        where: { roomId: query.roomId },
         include: {
           senderDetails: {
-            select: { firstName: true, lastName: true, profileImage: true },
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              profileImage: true,
+            },
           },
         },
+        orderBy: { createdAt: 'asc' },
+        take: +take,
+        omit: { senderId: true, roomId: true },
       });
-      return messages;
+
+      const totalData = await this.prisma.message.count({
+        where: { roomId: query.roomId },
+      });
+
+      return {
+        docs: messages,
+        pagination: getPagination({ pageNo: query.page, totalData, take }),
+      };
     } catch (error) {
       console.log('error', error);
       this.sharedService.sendError();

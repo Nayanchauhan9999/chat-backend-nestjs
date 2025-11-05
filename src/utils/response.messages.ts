@@ -13,6 +13,7 @@ export const errorMessages = {
   INVALID_TOKEN_PROVIDED: 'Invalid token provided',
   TOKEN_EXPIRED: 'Token expired',
   TOKEN_IS_MISSING: 'Token is missing',
+  INVALID_VALUE_PROVIDED: 'Invalid value provided',
 };
 
 export const successMessages = {

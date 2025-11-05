@@ -23,3 +23,12 @@ export enum SocketEventNames {
   MESSAGE_RECEIVED = 'message_received',
   SEND_MESSAGE = 'send_message',
 }
+
+export interface IPagination {
+  totalData?: number;
+  take?: number;
+  page?: number;
+  totalPages?: number;
+  nextPage?: number | null;
+  previousPage?: number | null;
+}

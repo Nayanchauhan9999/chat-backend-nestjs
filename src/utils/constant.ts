@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import { IPagination } from 'src/modules/chat/interfaces/chat.interface';
 
 async function hashPassword(
   password: string,
@@ -111,4 +112,30 @@ const adminRole = {
 
 const adminRoleId = 'c0f343ad-d9e1-4aab-9f45-9cfa1444872a';
 
-export { hashPassword, isPasswordSame, adminRoleId, adminRole };
+function getPagination({
+  pageNo = 1,
+  take = 10,
+  totalData,
+}: {
+  totalData: number;
+  pageNo?: number;
+  take?: number;
+}): IPagination {
+  const page = pageNo;
+  const totalPages = Math.ceil(totalData / +take);
+  const nextPage = page < totalPages ? +page + 1 : null;
+  const previousPage = page > 1 ? page - 1 : null;
+
+  return { totalData, page, take: +take, totalPages, nextPage, previousPage };
+}
+
+const DEFAULT_DATA_LENGTH = 10;
+
+export {
+  hashPassword,
+  isPasswordSame,
+  adminRoleId,
+  adminRole,
+  getPagination,
+  DEFAULT_DATA_LENGTH,
+};

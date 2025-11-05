@@ -1,15 +1,9 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpStatus,
-  Param,
-  Patch,
-} from '@nestjs/common';
+import { Controller, Get, HttpStatus, Patch, Query } from '@nestjs/common';
 import { ChatService } from './chat.service';
 // import { CreateChatDto } from './dto/create-chat.dto';
 import { SharedService } from 'src/services/shared.service';
 import { successMessages } from 'src/utils/response.messages';
+import { IPagination } from './interfaces/chat.interface';
 
 @Controller('chat')
 export class ChatController {
@@ -31,14 +25,15 @@ export class ChatController {
   // }
 
   @Get('get-messages')
-  async getMessages(@Param() params: { roomId: string }) {
-    const messages = await this.chatService.getMessages(params.roomId);
+  async getMessages(@Query() query: IPagination & { roomId: string }) {
+    const data = await this.chatService.getMessages(query);
     return this.sharedService.sendSuccess(
       successMessages.FETCH_SUCCESSFULLY,
       HttpStatus.OK,
-      messages,
+      data,
     );
   }
+
   @Patch('edit/:id')
   async editChat() {}
 }

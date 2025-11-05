@@ -1,16 +1,23 @@
-import { HttpStatus, Injectable, NestMiddleware } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { NextFunction, Request, Response } from 'express';
+import {
+  CanActivate,
+  ExecutionContext,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
+import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { User } from 'generated/prisma';
-import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
+import { Observable } from 'rxjs';
 import { errorMessages } from 'src/utils/response.messages';
 
 @Injectable()
-export class AuthMiddleware implements NestMiddleware {
+export class AuthGuard implements CanActivate {
   constructor(private jwtService: JwtService) {}
-
-  use(req: Request, response: Response, next: NextFunction) {
-    const token = req.headers.authorization?.split(' ')[1];
+  canActivate(
+    context: ExecutionContext,
+  ): boolean | Promise<boolean> | Observable<boolean> {
+    const request = context.switchToHttp().getRequest();
+    const response = context.switchToHttp().getResponse();
+    const token = request.headers.authorization?.split(' ')[1];
     if (!token) {
       return response.status(HttpStatus.BAD_REQUEST).json({
         status: HttpStatus.BAD_REQUEST,
@@ -20,7 +27,7 @@ export class AuthMiddleware implements NestMiddleware {
 
     try {
       const decode = this.jwtService.verify<User>(token);
-      req.user = decode;
+      request.user = decode;
     } catch (error) {
       if (error instanceof TokenExpiredError) {
         return response.status(HttpStatus.BAD_REQUEST).json({
@@ -39,7 +46,6 @@ export class AuthMiddleware implements NestMiddleware {
         });
       }
     }
-
-    next();
+    return true;
   }
 }
