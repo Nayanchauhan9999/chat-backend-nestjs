@@ -43,7 +43,6 @@ export class RoomController {
 
   @Get(':id')
   async getRoomById(@Param('id') id: string) {
-    console.log('id', id);
     const room = await this.roomService.getRoomById(id);
     return this.sharedService.sendSuccess(
       successMessages.FETCH_SUCCESSFULLY,
@@ -58,7 +57,11 @@ export class RoomController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.roomService.remove(+id);
+  async deleteRoomById(@Param('id') id: string) {
+    await this.roomService.deleteRoomById(id);
+    return this.sharedService.sendSuccess(
+      successMessages.ROOM_DELETED_SUCCESSFULLY,
+      HttpStatus.OK,
+    );
   }
 }

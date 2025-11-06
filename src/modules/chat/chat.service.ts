@@ -51,7 +51,7 @@ export class ChatService {
       const messages = await this.prisma.message.findMany({
         where: { roomId: query.roomId },
         include: {
-          senderDetails: {
+          sender: {
             select: {
               id: true,
               firstName: true,

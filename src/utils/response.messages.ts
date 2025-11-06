@@ -14,6 +14,7 @@ export const errorMessages = {
   TOKEN_EXPIRED: 'Token expired',
   TOKEN_IS_MISSING: 'Token is missing',
   INVALID_VALUE_PROVIDED: 'Invalid value provided',
+  INVALID_OR_MISSING_ID: 'Invalid or missing id',
 };
 
 export const successMessages = {
@@ -26,4 +27,5 @@ export const successMessages = {
   //users
   USERS_FETCH_SUCCESSFULLY: 'Users fetch successfully',
   FETCH_SUCCESSFULLY: 'Fetch successfully',
+  ROOM_DELETED_SUCCESSFULLY: 'Room deleted successfully',
 };

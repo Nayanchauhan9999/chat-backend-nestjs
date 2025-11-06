@@ -30,6 +30,11 @@ model User {
   Room         Room?     @relation(fields: [roomId], references: [id])
   roomId       String?
   Message      Message[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([firstName])
+  @@index([lastName])
 }
 
 //Otp Model
@@ -56,13 +61,16 @@ model Role {
 }
 
 model Message {
-  id            String   @id @default(uuid())
-  text          String
-  senderId      String
-  senderDetails User?    @relation(fields: [senderId], references: [id])
-  createdAt     DateTime @default(now())
-  roomId        String?
-  Room          Room[]
+  id        String   @id @default(uuid())
+  text      String
+  senderId  String
+  sender    User?    @relation(fields: [senderId], references: [id])
+  createdAt DateTime @default(now())
+  roomId    String?
+  Room      Room[]
+
+  @@index([roomId])
+  @@index([senderId])
 }
 
 enum RoomType {

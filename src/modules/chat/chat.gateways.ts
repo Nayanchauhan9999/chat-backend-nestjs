@@ -17,6 +17,7 @@ import { RoomType } from 'generated/prisma';
 import { HttpStatus, UseFilters } from '@nestjs/common';
 import { WsExceptionsFilter } from 'src/common/filters/ws-exception.filter';
 import { errorMessages } from 'src/utils/response.messages';
+import { isUUID } from 'class-validator';
 
 @WebSocketGateway({
   cors: {
@@ -50,6 +51,16 @@ export class ChatGateway {
     @MessageBody() room: IRoom,
     @ConnectedSocket() socket: Socket,
   ) {
+    if (
+      !socket.handshake.query?.userId ||
+      !isUUID(socket.handshake.query?.userId)
+    ) {
+      throw new WsException({
+        status: HttpStatus.BAD_REQUEST,
+        message: errorMessages.INVALID_OR_MISSING_ID,
+      });
+    }
+
     try {
       const createRoom = await this.prisma.room.create({
         data: {

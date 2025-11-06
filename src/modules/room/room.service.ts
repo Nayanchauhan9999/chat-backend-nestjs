@@ -22,7 +22,6 @@ export class RoomService {
     try {
       const take = query.take ? query.take : DEFAULT_DATA_LENGTH;
       const rooms = await this.prisma.room.findMany();
-
       const totalData = await this.prisma.room.count();
 
       return {
@@ -49,7 +48,15 @@ export class RoomService {
     return `This action updates a #${id} room`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} room`;
+  async deleteRoomById(roomId: string) {
+    try {
+      //delete room
+      await this.prisma.room.delete({ where: { id: roomId } });
+
+      //also delete group messages
+      await this.prisma.message.deleteMany({ where: { roomId } });
+    } catch {
+      this.sharedService.sendError();
+    }
   }
 }
