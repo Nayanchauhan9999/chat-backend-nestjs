@@ -61,11 +61,20 @@ export class ChatGateway {
       });
     }
 
+    var users = [socket.handshake.query?.userId];
+
+    if (room?.users && room?.users?.length > 0) {
+      users = [...users, ...room.users];
+    }
+
     try {
       const createRoom = await this.prisma.room.create({
         data: {
           roomType: room.roomType ? room.roomType : RoomType.PRIVATE,
           name: room.name ? room.name : null,
+          users: {
+            connect: users.map((id: string) => ({ id })),
+          },
           createdBy: socket.handshake.query?.userId as string,
         },
       });

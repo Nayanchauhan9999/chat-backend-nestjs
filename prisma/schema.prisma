@@ -87,6 +87,7 @@ model Room {
   updatedAt           DateTime @updatedAt
   unreadMessagesCount Int      @default(0)
   createdBy           String
+  isPinned            Boolean  @default(false)
 
   users       User[]
   lastMessage Message? @relation(fields: [messageId], references: [id])

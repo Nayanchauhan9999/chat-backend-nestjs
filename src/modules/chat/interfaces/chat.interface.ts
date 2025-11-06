@@ -14,6 +14,7 @@ export interface IMessage {
 export interface IRoom {
   roomType?: RoomType;
   name?: string;
+  users?: string[];
 }
 
 export enum SocketEventNames {

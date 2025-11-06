@@ -15,6 +15,9 @@ export const errorMessages = {
   TOKEN_IS_MISSING: 'Token is missing',
   INVALID_VALUE_PROVIDED: 'Invalid value provided',
   INVALID_OR_MISSING_ID: 'Invalid or missing id',
+  DATA_NOT_FOUND: 'Data not found',
+  ROOM_NOT_FOUND: 'Chat room not found',
+  DATABASE_ERROR_OCCURRED: 'Database error occurred',
 };
 
 export const successMessages = {

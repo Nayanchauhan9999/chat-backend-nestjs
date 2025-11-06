@@ -9,6 +9,7 @@ import {
   HttpStatus,
   UseGuards,
   Query,
+  Req,
 } from '@nestjs/common';
 import { RoomService } from './room.service';
 import { CreateRoomDto } from './dto/create-room.dto';
@@ -17,6 +18,7 @@ import { SharedService } from 'src/services/shared.service';
 import { successMessages } from 'src/utils/response.messages';
 import { AuthGuard } from 'src/guards/auth.guard';
 import type { IPagination } from '../chat/interfaces/chat.interface';
+import type { Request } from 'express';
 
 @Controller('room')
 @UseGuards(AuthGuard)
@@ -42,8 +44,8 @@ export class RoomController {
   }
 
   @Get(':id')
-  async getRoomById(@Param('id') id: string) {
-    const room = await this.roomService.getRoomById(id);
+  async getRoomById(@Req() request: Request, @Param('id') id: string) {
+    const room = await this.roomService.getRoomById(id, request.user.id);
     return this.sharedService.sendSuccess(
       successMessages.FETCH_SUCCESSFULLY,
       HttpStatus.OK,

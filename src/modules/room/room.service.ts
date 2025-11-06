@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { PrismaService } from 'src/services/prisma.service';
@@ -6,6 +6,7 @@ import { SharedService } from 'src/services/shared.service';
 import { errorMessages } from 'src/utils/response.messages';
 import { DEFAULT_DATA_LENGTH, getPagination } from 'src/utils/constant';
 import { IPagination } from '../chat/interfaces/chat.interface';
+import { isUUID } from 'class-validator';
 
 @Injectable()
 export class RoomService {
@@ -21,7 +22,14 @@ export class RoomService {
   async getRoomList(query: IPagination) {
     try {
       const take = query.take ? query.take : DEFAULT_DATA_LENGTH;
-      const rooms = await this.prisma.room.findMany();
+      const rooms = await this.prisma.room.findMany({
+        include: {
+          lastMessage: true,
+        },
+        omit: { messageId: true, updatedAt: true },
+        take: +take,
+        skip: take * (query?.page ? query.page : 1 - 1),
+      });
       const totalData = await this.prisma.room.count();
 
       return {
@@ -33,15 +41,45 @@ export class RoomService {
     }
   }
 
-  async getRoomById(id: string) {
-    try {
-      return await this.prisma.room.findUnique({
-        where: { id },
-        omit: { messageId: true },
-      });
-    } catch {
-      return this.sharedService.sendError(errorMessages.SOMETHING_WENT_WRONG);
+  async getRoomById(roomId: string, userId: string) {
+    if (!roomId || !isUUID(roomId)) {
+      return this.sharedService.sendError(
+        errorMessages.INVALID_OR_MISSING_ID,
+        HttpStatus.BAD_REQUEST,
+      );
     }
+
+    const roomData = await this.prisma.room.findFirst({
+      where: {
+        id: roomId,
+        users: {
+          some: {
+            id: userId,
+          },
+        },
+      },
+      include: {
+        users: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            profileImage: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!roomData) {
+      return this.sharedService.sendError(
+        errorMessages.DATA_NOT_FOUND,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return roomData;
   }
 
   update(id: number, updateRoomDto: UpdateRoomDto) {
@@ -49,6 +87,13 @@ export class RoomService {
   }
 
   async deleteRoomById(roomId: string) {
+    if (!roomId || !isUUID(roomId)) {
+      return this.sharedService.sendError(
+        errorMessages.INVALID_OR_MISSING_ID,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     try {
       //delete room
       await this.prisma.room.delete({ where: { id: roomId } });

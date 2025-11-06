@@ -47,35 +47,42 @@ export class ChatService {
       );
     }
 
-    try {
-      const messages = await this.prisma.message.findMany({
-        where: { roomId: query.roomId },
-        include: {
-          sender: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              profileImage: true,
-            },
+    const roomExist = await this.prisma.room.findUnique({
+      where: { id: query.roomId },
+    });
+
+    if (!roomExist) {
+      this.sharedService.sendError(
+        errorMessages.ROOM_NOT_FOUND,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const messages = await this.prisma.message.findMany({
+      where: { roomId: query.roomId },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profileImage: true,
           },
         },
-        orderBy: { createdAt: 'asc' },
-        take: +take,
-        omit: { senderId: true, roomId: true },
-      });
+      },
+      orderBy: { createdAt: 'asc' },
+      omit: { senderId: true, roomId: true },
+      take: +take,
+      skip: take * (query?.page ? query.page : 1 - 1),
+    });
 
-      const totalData = await this.prisma.message.count({
-        where: { roomId: query.roomId },
-      });
+    const totalData = await this.prisma.message.count({
+      where: { roomId: query.roomId },
+    });
 
-      return {
-        docs: messages,
-        pagination: getPagination({ pageNo: query.page, totalData, take }),
-      };
-    } catch (error) {
-      console.log('error', error);
-      this.sharedService.sendError();
-    }
+    return {
+      docs: messages,
+      pagination: getPagination({ pageNo: query.page, totalData, take }),
+    };
   }
 }
