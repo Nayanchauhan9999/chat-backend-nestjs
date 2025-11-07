@@ -25,6 +25,7 @@ export const successMessages = {
   OTP_SEND_SUCCESSFULLY: 'OTP sent successfully to your email',
   OTP_VERIFIED_SUCCESSFULLY: 'OTP Verified successfully',
   LOGIN_SUCCESSFULLY: 'Login successfully',
+  SIGNUP_SUCCESSFULLY: 'Signup successfully',
   PASSWORD_RESET_SUCCESSFULLY: 'Password reset successfully',
 
   //users

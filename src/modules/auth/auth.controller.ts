@@ -19,7 +19,7 @@ export class AuthController {
   async register(@Body() createUserDto: CreateUserDto) {
     const userData = await this.authService.createUser(createUserDto);
     return this.sharedService.sendSuccess(
-      successMessages.LOGIN_SUCCESSFULLY,
+      successMessages.SIGNUP_SUCCESSFULLY,
       HttpStatus.OK,
       userData,
     );

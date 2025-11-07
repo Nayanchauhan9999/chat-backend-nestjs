@@ -42,6 +42,8 @@ export class ChatGateway {
         roomId: message.roomId,
       },
     });
+
+    // socket.emit(SocketEventNames.MESSAGE_RECEIVED, createMessage);
     this.server.emit(SocketEventNames.MESSAGE_RECEIVED, createMessage);
   }
 
