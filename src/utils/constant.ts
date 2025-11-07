@@ -121,7 +121,7 @@ function getPagination({
   pageNo?: number;
   take?: number;
 }): IPagination {
-  const page = pageNo;
+  const page = +pageNo;
   const totalPages = Math.ceil(totalData / +take);
   const nextPage = page < totalPages ? +page + 1 : null;
   const previousPage = page > 1 ? page - 1 : null;

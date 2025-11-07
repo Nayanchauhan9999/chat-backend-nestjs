@@ -13,7 +13,7 @@ import { errorMessages } from 'src/utils/response.messages';
 export class PrismaExceptionFilter extends BaseExceptionFilter {
   catch(exception: any, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse();
+    const response: Response = ctx.getResponse();
 
     console.error('Prisma error:', exception);
 
@@ -22,26 +22,27 @@ export class PrismaExceptionFilter extends BaseExceptionFilter {
       switch (exception.code) {
         case 'P2002':
           return response.status(HttpStatus.CONFLICT).json({
-            statusCode: HttpStatus.CONFLICT,
+            status: HttpStatus.CONFLICT,
             message: 'Unique constraint violation',
             error: exception.meta,
           });
 
         case 'P2025':
+          // trying to update or delete a non-existent record in the database
           return response.status(HttpStatus.NOT_FOUND).json({
-            statusCode: HttpStatus.NOT_FOUND,
-            message: 'Record not found',
+            status: HttpStatus.NOT_FOUND,
+            message: errorMessages.RECORD_NOT_FOUND,
           });
 
         case 'P2003':
           return response.status(HttpStatus.BAD_REQUEST).json({
-            statusCode: HttpStatus.BAD_REQUEST,
+            status: HttpStatus.BAD_REQUEST,
             message: 'Foreign key constraint failed',
           });
 
         default:
           return response.status(HttpStatus.BAD_REQUEST).json({
-            statusCode: HttpStatus.BAD_REQUEST,
+            status: HttpStatus.BAD_REQUEST,
             message: 'Database operation failed',
             code: exception.code,
           });
@@ -50,21 +51,21 @@ export class PrismaExceptionFilter extends BaseExceptionFilter {
 
     if (exception instanceof Prisma.PrismaClientValidationError) {
       return response.status(HttpStatus.BAD_REQUEST).json({
-        statusCode: HttpStatus.BAD_REQUEST,
+        status: HttpStatus.BAD_REQUEST,
         message: 'Validation error',
       });
     }
 
     if (exception instanceof Prisma.PrismaClientInitializationError) {
       return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'Database connection failed',
       });
     }
 
     // Generic database error
     return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'Database error occurred',
     });
   }

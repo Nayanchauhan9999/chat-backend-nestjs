@@ -1,4 +1,15 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateRoomDto } from './create-room.dto';
+import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 
-export class UpdateRoomDto extends PartialType(CreateRoomDto) {}
+export class UpdateRoomDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsNumber()
+  unreadMessagesCount?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isPinned?: boolean;
+}

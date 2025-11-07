@@ -63,7 +63,7 @@ export class ChatGateway {
       });
     }
 
-    var users = [socket.handshake.query?.userId];
+    let users = [socket.handshake.query?.userId];
 
     if (room?.users && room?.users?.length > 0) {
       users = [...users, ...room.users];
@@ -79,9 +79,10 @@ export class ChatGateway {
           },
           createdBy: socket.handshake.query?.userId as string,
         },
+        omit: { messageId: true, updatedAt: true },
       });
       this.server.emit(SocketEventNames.ROOM_JOINED, { roomId: createRoom.id });
-    } catch (error) {
+    } catch {
       throw new WsException({
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: errorMessages.SOMETHING_WENT_WRONG,

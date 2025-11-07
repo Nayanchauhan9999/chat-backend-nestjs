@@ -16,6 +16,7 @@ export const errorMessages = {
   INVALID_VALUE_PROVIDED: 'Invalid value provided',
   INVALID_OR_MISSING_ID: 'Invalid or missing id',
   DATA_NOT_FOUND: 'Data not found',
+  RECORD_NOT_FOUND: 'Record not found',
   ROOM_NOT_FOUND: 'Chat room not found',
   DATABASE_ERROR_OCCURRED: 'Database error occurred',
 };
@@ -31,5 +32,6 @@ export const successMessages = {
   //users
   USERS_FETCH_SUCCESSFULLY: 'Users fetch successfully',
   FETCH_SUCCESSFULLY: 'Fetch successfully',
+  ROOM_SUCCESSFULLY: 'Room updated successfully',
   ROOM_DELETED_SUCCESSFULLY: 'Room deleted successfully',
 };

@@ -7,6 +7,7 @@ import { errorMessages } from 'src/utils/response.messages';
 import { DEFAULT_DATA_LENGTH, getPagination } from 'src/utils/constant';
 import { IPagination } from '../chat/interfaces/chat.interface';
 import { isUUID } from 'class-validator';
+import { RoomType } from 'generated/prisma';
 
 @Injectable()
 export class RoomService {
@@ -15,14 +16,42 @@ export class RoomService {
     private readonly sharedService: SharedService,
   ) {}
 
-  create(createRoomDto: CreateRoomDto) {
-    return 'This action adds a new room';
+  async create(createRoomDto: CreateRoomDto, userId: string) {
+    if (!userId || !isUUID(userId)) {
+      this.sharedService.sendError(
+        errorMessages.INVALID_OR_MISSING_ID,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    let users = [userId];
+
+    if (createRoomDto?.users && createRoomDto?.users?.length > 0) {
+      users = [...users, ...createRoomDto.users];
+    }
+
+    const createdRoom = await this.prisma.room.create({
+      data: {
+        roomType: createRoomDto.roomType
+          ? createRoomDto.roomType
+          : RoomType.PRIVATE,
+        name: createRoomDto.name ? createRoomDto.name : null,
+        users: {
+          connect: users.map((id: string) => ({ id })),
+        },
+        createdBy: userId,
+      },
+      omit: { messageId: true, updatedAt: true },
+    });
+
+    return createdRoom;
   }
 
-  async getRoomList(query: IPagination) {
+  async getRoomList(query: IPagination, userId: string) {
     try {
       const take = query.take ? query.take : DEFAULT_DATA_LENGTH;
       const rooms = await this.prisma.room.findMany({
+        where: { users: { some: { id: userId } } },
         include: {
           lastMessage: true,
         },
@@ -30,7 +59,9 @@ export class RoomService {
         take: +take,
         skip: take * (query?.page ? query.page : 1 - 1),
       });
-      const totalData = await this.prisma.room.count();
+      const totalData = await this.prisma.room.count({
+        where: { users: { some: { id: userId } } },
+      });
 
       return {
         docs: rooms,
@@ -82,8 +113,33 @@ export class RoomService {
     return roomData;
   }
 
-  update(id: number, updateRoomDto: UpdateRoomDto) {
-    return `This action updates a #${id} room`;
+  async updateRoom(roomId: string, updateRoomDto: UpdateRoomDto) {
+    if (!roomId || !isUUID(roomId)) {
+      return this.sharedService.sendError(
+        errorMessages.INVALID_OR_MISSING_ID,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const dataToUpdate = {};
+
+    if (updateRoomDto.name !== undefined) {
+      dataToUpdate['name'] = updateRoomDto.name;
+    }
+    if (updateRoomDto.isPinned !== undefined) {
+      dataToUpdate['isPinned'] = updateRoomDto.isPinned;
+    }
+    if (updateRoomDto.unreadMessagesCount !== undefined) {
+      dataToUpdate['unreadMessagesCount'] = updateRoomDto.unreadMessagesCount;
+    }
+
+    //update room
+    const updatedRoom = await this.prisma.room.update({
+      where: { id: roomId },
+      data: dataToUpdate,
+    });
+
+    return updatedRoom;
   }
 
   async deleteRoomById(roomId: string) {
@@ -94,14 +150,12 @@ export class RoomService {
       );
     }
 
-    try {
-      //delete room
-      await this.prisma.room.delete({ where: { id: roomId } });
+    //delete room
+    await this.prisma.room.delete({
+      where: { id: roomId },
+    });
 
-      //also delete group messages
-      await this.prisma.message.deleteMany({ where: { roomId } });
-    } catch {
-      this.sharedService.sendError();
-    }
+    //also delete group messages
+    await this.prisma.message.deleteMany({ where: { roomId } });
   }
 }

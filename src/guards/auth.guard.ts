@@ -5,7 +5,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
-import { Request, Response } from 'express';
+import { Request } from 'express';
 import { User } from 'generated/prisma';
 import { SharedService } from 'src/services/shared.service';
 import { errorMessages } from 'src/utils/response.messages';

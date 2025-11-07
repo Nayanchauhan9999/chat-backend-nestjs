@@ -80,16 +80,19 @@ enum RoomType {
 }
 
 model Room {
-  id                  String   @id @default(uuid())
+  id        String  @id @default(uuid())
+  name      String?
+  createdBy String
+  users     User[]
+
   roomType            RoomType @default(PRIVATE)
-  name                String?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
   unreadMessagesCount Int      @default(0)
-  createdBy           String
   isPinned            Boolean  @default(false)
 
-  users       User[]
   lastMessage Message? @relation(fields: [messageId], references: [id])
   messageId   String?
+
+  @@index([createdBy, roomType, name])
 }

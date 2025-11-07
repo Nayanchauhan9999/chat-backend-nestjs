@@ -28,14 +28,19 @@ export class RoomController {
     private sharedService: SharedService,
   ) {}
 
-  @Post()
-  create(@Body() createRoomDto: CreateRoomDto) {
-    return this.roomService.create(createRoomDto);
+  @Post('create')
+  async create(@Body() createRoomDto: CreateRoomDto, @Req() request: Request) {
+    const room = await this.roomService.create(createRoomDto, request.user.id);
+    return this.sharedService.sendSuccess(
+      successMessages.FETCH_SUCCESSFULLY,
+      HttpStatus.CREATED,
+      room,
+    );
   }
 
   @Get('list')
-  async findAll(@Query() query: IPagination) {
-    const roomList = await this.roomService.getRoomList(query);
+  async findAll(@Query() query: IPagination, @Req() request: Request) {
+    const roomList = await this.roomService.getRoomList(query, request.user.id);
     return this.sharedService.sendSuccess(
       successMessages.FETCH_SUCCESSFULLY,
       HttpStatus.OK,
@@ -54,8 +59,13 @@ export class RoomController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateRoomDto: UpdateRoomDto) {
-    return this.roomService.update(+id, updateRoomDto);
+  async update(@Param('id') id: string, @Body() updateRoomDto: UpdateRoomDto) {
+    const updatedRoom = await this.roomService.updateRoom(id, updateRoomDto);
+    return this.sharedService.sendSuccess(
+      successMessages.ROOM_SUCCESSFULLY,
+      HttpStatus.OK,
+      updatedRoom,
+    );
   }
 
   @Delete(':id')
