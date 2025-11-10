@@ -30,6 +30,41 @@ export class RoomService {
       users = [...users, ...createRoomDto.users];
     }
 
+    users = Array.from(new Set(users)); //remove duplicate user ids
+
+    if (users.length < 2) {
+      this.sharedService.sendError(
+        errorMessages.AT_LEAST_TWO_USERS_REQUIRED,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Validate for private room user count
+    if (createRoomDto.roomType === RoomType.PRIVATE && users.length > 2) {
+      this.sharedService.sendError(
+        'Private rooms can only have two participants.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    //if room is private, ensure similar room doesn't exist
+    if (createRoomDto.roomType === RoomType.PRIVATE) {
+      const existingRoom = await this.prisma.room.findFirst({
+        where: {
+          roomType: RoomType.PRIVATE,
+          users: { every: { id: { in: users } } },
+        },
+        omit: { messageId: true, updatedAt: true },
+      });
+
+      if (existingRoom) {
+        this.sharedService.sendError(
+          errorMessages.ROOM_ALREADY_EXISTS,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
     const createdRoom = await this.prisma.room.create({
       data: {
         roomType: createRoomDto.roomType

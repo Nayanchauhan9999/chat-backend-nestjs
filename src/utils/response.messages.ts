@@ -19,6 +19,9 @@ export const errorMessages = {
   RECORD_NOT_FOUND: 'Record not found',
   ROOM_NOT_FOUND: 'Chat room not found',
   DATABASE_ERROR_OCCURRED: 'Database error occurred',
+  ROOM_ALREADY_EXISTS: 'Room already exists',
+  AT_LEAST_TWO_USERS_REQUIRED:
+    'At least two users are required to create a room',
 };
 
 export const successMessages = {

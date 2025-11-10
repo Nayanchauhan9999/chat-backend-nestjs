@@ -19,7 +19,7 @@ export class CreateRoomDto {
   @IsDefined({ message: 'roomType is required' })
   @IsNotEmpty()
   @IsEnum(RoomType)
-  roomType: 'PRIVATE' | 'GROUP' | 'CHANNEL';
+  roomType: RoomType;
 
   @IsDefined({ message: 'Users required' })
   @IsArray({ message: 'Users must be an array' })
