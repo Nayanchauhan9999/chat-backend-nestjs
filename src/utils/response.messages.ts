@@ -22,6 +22,8 @@ export const errorMessages = {
   ROOM_ALREADY_EXISTS: 'Room already exists',
   AT_LEAST_TWO_USERS_REQUIRED:
     'At least two users are required to create a room',
+  INVALID_MESSAGE_TYPE: 'Invalid message type',
+  TEXT_CAN_NOT_BE_EMPTY: 'Text can not be empty',
 };
 
 export const successMessages = {
@@ -37,4 +39,5 @@ export const successMessages = {
   FETCH_SUCCESSFULLY: 'Fetch successfully',
   ROOM_SUCCESSFULLY: 'Room updated successfully',
   ROOM_DELETED_SUCCESSFULLY: 'Room deleted successfully',
+  MESSAGE_SENT_SUCCESSFULLY: 'Message sent successfully',
 };

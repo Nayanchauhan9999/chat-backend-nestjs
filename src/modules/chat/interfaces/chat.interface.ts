@@ -1,4 +1,4 @@
-import { RoomType } from 'generated/prisma';
+import { MessageType, RoomType } from 'generated/prisma';
 
 export interface IChat {
   id: string;
@@ -7,8 +7,10 @@ export interface IChat {
 }
 
 export interface IMessage {
-  text: string;
+  text?: string;
   roomId: string;
+  messageType: MessageType;
+  replyToId?: string;
 }
 
 export interface IRoom {

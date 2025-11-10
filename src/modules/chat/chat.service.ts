@@ -4,6 +4,7 @@ import { SharedService } from 'src/services/shared.service';
 import { IPagination } from './interfaces/chat.interface';
 import { DEFAULT_DATA_LENGTH, getPagination } from 'src/utils/constant';
 import { errorMessages } from 'src/utils/response.messages';
+import { SendMessageDto } from './dto/send-message.dto';
 // import { CreateChatDto } from './dto/create-chat.dto';
 // import OpenAI from 'openai';
 
@@ -29,6 +30,57 @@ export class ChatService {
   //     return JSON.stringify(error);
   //   }
   // }
+
+  async sendMessage(sendMessageDto: SendMessageDto, senderId: string) {
+    switch (sendMessageDto.messageType) {
+      case 'TEXT': {
+        const message = await this.prisma.message.create({
+          data: {
+            messageType: sendMessageDto.messageType, // Required field
+            roomId: sendMessageDto.roomId, // Required field
+            text: sendMessageDto.text,
+            senderId,
+          },
+          include: {
+            sender: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                profileImage: true,
+              },
+            },
+          },
+          omit: {
+            senderId: true,
+            roomId: true,
+            isEdited: true,
+            isDeleted: true,
+            replyToId: true,
+            updatedAt: true,
+          },
+        });
+        return message;
+      }
+      case 'IMAGE':
+        console.log('Image message');
+        break;
+      case 'VIDEO':
+        console.log('Video message');
+        break;
+      case 'FILE':
+        console.log('File message');
+        break;
+      case 'AUDIO':
+        console.log('Audio message');
+        break;
+      default:
+        this.sharedService.sendError(
+          errorMessages.INVALID_MESSAGE_TYPE,
+          HttpStatus.BAD_REQUEST,
+        );
+    }
+  }
 
   async getMessages(query: IPagination & { roomId: string }) {
     if (!query.roomId) {

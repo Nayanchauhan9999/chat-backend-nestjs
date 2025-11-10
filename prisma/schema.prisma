@@ -60,14 +60,36 @@ model Role {
   permission Json
 }
 
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  FILE
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
 model Message {
-  id        String   @id @default(uuid())
-  text      String
-  senderId  String
-  sender    User?    @relation(fields: [senderId], references: [id])
-  createdAt DateTime @default(now())
-  roomId    String?
-  Room      Room[]
+  id          String        @id @default(uuid())
+  text        String?
+  senderId    String
+  sender      User?         @relation(fields: [senderId], references: [id])
+  createdAt   DateTime      @default(now())
+  roomId      String?
+  Room        Room[]
+  messageType MessageType   @default(TEXT)
+  isDeleted   Boolean       @default(false)
+  status      MessageStatus @default(SENT)
+  isEdited    Boolean       @default(false)
+  updatedAt   DateTime      @updatedAt
+  replyTo     Message?      @relation("MessageReplies", fields: [replyToId], references: [id])
+  replyToId   String?
+  replies     Message[]     @relation("MessageReplies")
 
   @@index([roomId])
   @@index([senderId])

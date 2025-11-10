@@ -20,6 +20,7 @@ import { WsExceptionsFilter } from 'src/common/filters/ws-exception.filter';
 import { errorMessages } from 'src/utils/response.messages';
 import { isUUID } from 'class-validator';
 import { CreateRoomDto } from '../room/dto/create-room.dto';
+import { WsValidationPipe } from 'src/common/pipes/ws-validation.pipe';
 
 @WebSocketGateway({
   cors: {
@@ -33,7 +34,7 @@ export class ChatGateway {
   constructor(private prisma: PrismaService) {}
 
   @SubscribeMessage(SocketEventNames.SEND_MESSAGE)
-  async handleMessage(
+  async handleSendMessage(
     @MessageBody() message: IMessage,
     @ConnectedSocket() socket: Socket,
   ) {
@@ -50,25 +51,7 @@ export class ChatGateway {
   }
 
   //   create : chat room
-  @UsePipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      stopAtFirstError: true,
-      exceptionFactory: (errors) => {
-        const formattedErrors = errors
-          .map((err) =>
-            Object.values(err.constraints as Record<string, string>),
-          )
-          .flat();
-
-        return new WsException({
-          status: HttpStatus.BAD_REQUEST,
-          message: formattedErrors,
-        });
-      },
-    }),
-  )
+  @UsePipes(new WsValidationPipe())
   @SubscribeMessage(SocketEventNames.CREATE_ROOM)
   async handleCreateChatRoom(
     @MessageBody(new ValidationPipe()) createRoomDto: CreateRoomDto,
