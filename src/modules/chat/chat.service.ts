@@ -5,6 +5,7 @@ import { IPagination } from './interfaces/chat.interface';
 import { DEFAULT_DATA_LENGTH, getPagination } from 'src/utils/constant';
 import { errorMessages } from 'src/utils/response.messages';
 import { SendMessageDto } from './dto/send-message.dto';
+import { UpdateMessageDto } from './dto/update-message.dto';
 // import { CreateChatDto } from './dto/create-chat.dto';
 // import OpenAI from 'openai';
 
@@ -38,8 +39,9 @@ export class ChatService {
           data: {
             messageType: sendMessageDto.messageType, // Required field
             roomId: sendMessageDto.roomId, // Required field
-            text: sendMessageDto.text,
+            text: sendMessageDto.text, // Text content for TEXT message type
             senderId,
+            replyToId: sendMessageDto.replyToId,
           },
           include: {
             sender: {
@@ -136,5 +138,65 @@ export class ChatService {
       docs: messages,
       pagination: getPagination({ pageNo: query.page, totalData, take }),
     };
+  }
+
+  async updateMessage(updateMessageDto: UpdateMessageDto) {
+    const getMessage = await this.prisma.message.findUnique({
+      where: { id: updateMessageDto.messageId },
+    });
+
+    const dataToUpdate = {};
+
+    switch (getMessage?.messageType) {
+      case 'TEXT': {
+        dataToUpdate['text'] = updateMessageDto.text;
+        dataToUpdate['isEdited'] = true;
+
+        const message = await this.prisma.message.update({
+          where: { id: updateMessageDto.messageId },
+          data: dataToUpdate,
+        });
+        return message;
+      }
+
+      case 'IMAGE':
+        console.log('Image message');
+        break;
+
+      case 'VIDEO':
+        console.log('Video message');
+        break;
+
+      case 'FILE':
+        console.log('File message');
+        break;
+
+      case 'AUDIO':
+        console.log('Audio message');
+        break;
+
+      default:
+        this.sharedService.sendError(
+          errorMessages.INVALID_MESSAGE_TYPE,
+          HttpStatus.BAD_REQUEST,
+        );
+    }
+
+    const updatedMessage = await this.prisma.message.findUnique({
+      where: { id: updateMessageDto.messageId },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profileImage: true,
+          },
+        },
+      },
+      omit: { senderId: true, roomId: true },
+    });
+
+    return updatedMessage;
   }
 }

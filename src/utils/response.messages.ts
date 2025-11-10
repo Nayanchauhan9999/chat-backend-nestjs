@@ -40,4 +40,5 @@ export const successMessages = {
   ROOM_SUCCESSFULLY: 'Room updated successfully',
   ROOM_DELETED_SUCCESSFULLY: 'Room deleted successfully',
   MESSAGE_SENT_SUCCESSFULLY: 'Message sent successfully',
+  MESSAGE_UPDATED_SUCCESSFULLY: 'Message updated successfully',
 };

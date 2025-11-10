@@ -16,6 +16,7 @@ import { IPagination } from './interfaces/chat.interface';
 import { SendMessageDto } from './dto/send-message.dto';
 import { type Request } from 'express';
 import { AuthGuard } from 'src/guards/auth.guard';
+import { UpdateMessageDto } from './dto/update-message.dto';
 
 @UseGuards(AuthGuard)
 @Controller('chat')
@@ -50,6 +51,13 @@ export class ChatController {
     );
   }
 
-  @Patch('edit/:id')
-  async editChat() {}
+  @Patch('update-message')
+  async editChat(@Body() updateMessageDto: UpdateMessageDto) {
+    const message = await this.chatService.updateMessage(updateMessageDto);
+    return this.sharedService.sendSuccess(
+      successMessages.MESSAGE_UPDATED_SUCCESSFULLY,
+      HttpStatus.OK,
+      message,
+    );
+  }
 }
