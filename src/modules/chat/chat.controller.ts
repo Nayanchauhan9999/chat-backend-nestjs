@@ -7,7 +7,6 @@ import {
   Post,
   Query,
   Req,
-  UseGuards,
 } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { SharedService } from 'src/services/shared.service';
@@ -15,10 +14,8 @@ import { successMessages } from 'src/utils/response.messages';
 import { IPagination } from './interfaces/chat.interface';
 import { SendMessageDto } from './dto/send-message.dto';
 import { type Request } from 'express';
-import { AuthGuard } from 'src/guards/auth.guard';
 import { UpdateMessageDto } from './dto/update-message.dto';
 
-@UseGuards(AuthGuard)
 @Controller('chat')
 export class ChatController {
   constructor(

@@ -26,34 +26,25 @@ export class AuthService {
 
   //Register
   async createUser(createUserDto: CreateUserDto): Promise<User | void> {
-    //Find existing user
-    const findUser = await this.prisma.user.findFirst({
-      where: {
-        OR: [{ email: createUserDto.email }, { phone: createUserDto.phone }],
+    // Hash password
+    const hashedPassword: string = await hashPassword(createUserDto.password);
+
+    // Create user
+    const user = await this.prisma.user.create({
+      data: {
+        ...createUserDto,
+        password: hashedPassword,
       },
     });
 
-    if (findUser) {
-      return this.sharedService.sendError(
-        errorMessages.USER_ALREADY_EXIST,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    // Generate JWT token
+    const token = this.jwtService.sign({ id: user.id });
 
-    try {
-      const hashedPassword: string = await hashPassword(createUserDto.password);
-      const token = this.jwtService.sign(JSON.stringify(createUserDto));
-      return await this.prisma.user.create({
-        data: {
-          ...createUserDto,
-          password: hashedPassword,
-          token: token,
-        },
-      });
-    } catch (error) {
-      this.logger.log('error', error);
-      return this.sharedService.sendError();
-    }
+    // Update user with token
+    return this.prisma.user.update({
+      where: { id: user.id },
+      data: { token },
+    });
   }
 
   //Login
@@ -82,7 +73,9 @@ export class AuthService {
       );
     }
 
-    const token = this.jwtService.sign(findUser);
+    const token = this.jwtService.sign({
+      id: findUser.id,
+    });
 
     const updatedUser = await this.prisma.user.update({
       where: { id: findUser.id },

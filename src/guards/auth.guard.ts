@@ -8,6 +8,7 @@ import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { Request } from 'express';
 import { User } from 'generated/prisma';
 import { SharedService } from 'src/services/shared.service';
+import { publicRoutes } from 'src/utils/constant';
 import { errorMessages } from 'src/utils/response.messages';
 
 @Injectable()
@@ -18,6 +19,16 @@ export class AuthGuard implements CanActivate {
   ) {}
   canActivate(context: ExecutionContext): boolean | Promise<boolean> {
     const request: Request = context.switchToHttp().getRequest();
+
+    const isPublicRoute = publicRoutes.some((route) =>
+      request.path.includes(route),
+    );
+
+    // will not check for public routes
+    if (isPublicRoute) {
+      return true;
+    }
+
     const token = request.headers.authorization?.split(' ')[1];
     if (!token) {
       this.sharedService.sendError(

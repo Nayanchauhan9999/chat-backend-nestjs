@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   HttpStatus,
-  UseGuards,
   Query,
   Req,
 } from '@nestjs/common';
@@ -16,12 +15,10 @@ import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { SharedService } from 'src/services/shared.service';
 import { successMessages } from 'src/utils/response.messages';
-import { AuthGuard } from 'src/guards/auth.guard';
 import type { IPagination } from '../chat/interfaces/chat.interface';
 import type { Request } from 'express';
 
 @Controller('room')
-@UseGuards(AuthGuard)
 export class RoomController {
   constructor(
     private readonly roomService: RoomService,

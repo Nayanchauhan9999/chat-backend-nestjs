@@ -13,6 +13,8 @@ import { AppController } from './app.controller';
 import { UsersModule } from './modules/users/users.module';
 import { ChatGateway } from './modules/chat/chat.gateways';
 import { RoomModule } from './modules/room/room.module';
+import { APP_GUARD } from '@nestjs/core';
+import { AuthGuard } from './guards/auth.guard';
 
 @Module({
   imports: [
@@ -46,7 +48,11 @@ import { RoomModule } from './modules/room/room.module';
     UsersModule,
     RoomModule,
   ],
-  providers: [AppService, ChatGateway],
+  providers: [
+    AppService,
+    ChatGateway,
+    { provide: APP_GUARD, useClass: AuthGuard },
+  ],
   controllers: [AppController],
   exports: [],
 })

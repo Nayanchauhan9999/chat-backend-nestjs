@@ -131,6 +131,15 @@ function getPagination({
 
 const DEFAULT_DATA_LENGTH = 10;
 
+const publicRoutes = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/forgot-password',
+  '/auth/verify-otp',
+  '/auth/reset-password',
+  '/auth/resend-otp',
+];
+
 export {
   hashPassword,
   isPasswordSame,
@@ -138,4 +147,5 @@ export {
   adminRole,
   getPagination,
   DEFAULT_DATA_LENGTH,
+  publicRoutes,
 };
