@@ -44,6 +44,8 @@ model Otp {
   userId    String   @unique
   createdAt DateTime @default(now())
   expireAt  DateTime
+
+  @@index([userId])
 }
 
 enum RoleType {

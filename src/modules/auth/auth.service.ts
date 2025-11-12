@@ -25,7 +25,7 @@ export class AuthService {
   ) {}
 
   //Register
-  async createUser(createUserDto: CreateUserDto): Promise<User | void> {
+  async createUser(createUserDto: CreateUserDto) {
     // Hash password
     const hashedPassword: string = await hashPassword(createUserDto.password);
 
@@ -44,11 +44,12 @@ export class AuthService {
     return this.prisma.user.update({
       where: { id: user.id },
       data: { token },
+      omit: { roomId: true, isDeleted: true, password: true },
     });
   }
 
   //Login
-  async login(loginDto: LoginDto): Promise<User | void> {
+  async login(loginDto: LoginDto) {
     const { phone, password, email } = loginDto;
 
     const findUser = await this.prisma.user.findFirst({
@@ -80,6 +81,7 @@ export class AuthService {
     const updatedUser = await this.prisma.user.update({
       where: { id: findUser.id },
       data: { token: token },
+      omit: { roomId: true, isDeleted: true, password: true },
     });
     return updatedUser;
   }
@@ -102,7 +104,7 @@ export class AuthService {
 
     // check is otp already send to the user
     const findOtp = await this.prisma.otp.findFirst({
-      where: { userId: findUser.id },
+      where: { email: forgotPasswordDto.email },
     });
 
     // check is otp expire?
@@ -116,7 +118,7 @@ export class AuthService {
         );
       }
       await this.prisma.otp.update({
-        where: { userId: findUser.id },
+        where: { email: forgotPasswordDto.email },
         data: {
           createdAt: new Date(),
           expireAt: new Date(Date.now() + 60 * 1000),
@@ -127,20 +129,17 @@ export class AuthService {
       await this.prisma.otp.create({
         data: {
           otp: random6DigitOTP,
-          userId: findUser.id,
+          email: forgotPasswordDto.email,
           expireAt: new Date(Date.now() + 60 * 1000),
         },
       });
     }
 
-    try {
-      await this.mailService.sendOtpMail(
-        'nayan@sevensquaretech.com',
-        random6DigitOTP,
-      );
-    } catch {
-      return this.sharedService.sendError(errorMessages.SOMETHING_WENT_WRONG);
-    }
+    await this.mailService.sendOtpMail(
+      'nayan@sevensquaretech.com',
+      random6DigitOTP,
+    );
+
     return random6DigitOTP;
   }
 
@@ -162,7 +161,7 @@ export class AuthService {
 
     //Find OTP from otp table
     const findOtp = await this.prisma.otp.findFirst({
-      where: { userId: findUser?.id },
+      where: { email: forgotPasswordDto.email },
     });
 
     if (findOtp) {
@@ -176,7 +175,7 @@ export class AuthService {
 
       // Update existing OTP
       await this.prisma.otp.update({
-        where: { userId: findUser.id },
+        where: { email: forgotPasswordDto.email },
         data: {
           expireAt: new Date(Date.now() + 60 * 1000),
           otp: random6DigitOTP,
@@ -187,7 +186,7 @@ export class AuthService {
       await this.prisma.otp.create({
         data: {
           otp: random6DigitOTP,
-          userId: findUser.id,
+          email: forgotPasswordDto.email,
           expireAt: new Date(Date.now() + 60 * 1000),
         },
       });
@@ -221,7 +220,7 @@ export class AuthService {
 
     //Find OTP from otp table
     const findOtp = await this.prisma.otp.findFirst({
-      where: { userId: findUser?.id, otp: +verifyOtpDto.otp },
+      where: { email: verifyOtpDto.email, otp: +verifyOtpDto.otp },
     });
 
     //if otp is not found,it means otp expire, because of expired otp is been removed from database
