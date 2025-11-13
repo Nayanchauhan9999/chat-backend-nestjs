@@ -11,6 +11,7 @@ declare global {
       NODEMAILER_PORT: number;
       NODEMAILER_EMAIL_FROM: string;
       ENVIRONMENT: 'Production' | 'Development';
+      SMTP_PASSWORD: string;
     }
   }
 

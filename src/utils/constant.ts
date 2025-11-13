@@ -140,6 +140,17 @@ const publicRoutes = [
   '/auth/resend-otp',
 ];
 
+enum EnvironmentVariablesEnum {
+  PORT = 'PORT',
+  JWT_SECRET_KEY = 'JWT_SECRET_KEY',
+  SMTP_HOST = 'SMTP_HOST',
+  SMTP_PORT = 'SMTP_PORT',
+  SENT_EMAIL_FROM = 'SENT_EMAIL_FROM',
+  ENVIRONMENT = 'ENVIRONMENT',
+  SMTP_PASSWORD = 'SMTP_PASSWORD',
+  SMTP_USER = 'SMTP_USER',
+}
+
 export {
   hashPassword,
   isPasswordSame,
@@ -148,4 +159,5 @@ export {
   getPagination,
   DEFAULT_DATA_LENGTH,
   publicRoutes,
+  EnvironmentVariablesEnum,
 };

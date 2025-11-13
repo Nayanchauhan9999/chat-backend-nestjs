@@ -13,6 +13,8 @@ import { Logger } from 'winston';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { compare } from 'bcrypt';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
@@ -22,6 +24,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     @Inject('winston') private logger: Logger,
+    private configService: ConfigService,
   ) {}
 
   //Register
@@ -90,7 +93,7 @@ export class AuthService {
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
     const random6DigitOTP = Math.floor(100000 + Math.random() * 900000);
 
-    const findUser = await this.prisma.user.findFirst({
+    const findUser = await this.prisma.user.findUnique({
       where: { email: forgotPasswordDto.email },
     });
 
@@ -103,9 +106,11 @@ export class AuthService {
     }
 
     // check is otp already send to the user
-    const findOtp = await this.prisma.otp.findFirst({
-      where: { email: forgotPasswordDto.email },
+    const findOtp = await this.prisma.otp.findUnique({
+      where: { userId: findUser.id },
     });
+
+    const hashOtp = await hashPassword(random6DigitOTP.toString());
 
     // check is otp expire?
     if (findOtp) {
@@ -118,27 +123,24 @@ export class AuthService {
         );
       }
       await this.prisma.otp.update({
-        where: { email: forgotPasswordDto.email },
+        where: { id: findOtp.id },
         data: {
           createdAt: new Date(),
           expireAt: new Date(Date.now() + 60 * 1000),
-          otp: random6DigitOTP,
+          otp: hashOtp,
         },
       });
     } else {
       await this.prisma.otp.create({
         data: {
-          otp: random6DigitOTP,
-          email: forgotPasswordDto.email,
+          otp: hashOtp,
+          userId: findUser.id,
           expireAt: new Date(Date.now() + 60 * 1000),
         },
       });
     }
 
-    await this.mailService.sendOtpMail(
-      'nayan@sevensquaretech.com',
-      random6DigitOTP,
-    );
+    await this.mailService.sendOtpMail(findUser.email, random6DigitOTP);
 
     return random6DigitOTP;
   }
@@ -161,8 +163,10 @@ export class AuthService {
 
     //Find OTP from otp table
     const findOtp = await this.prisma.otp.findFirst({
-      where: { email: forgotPasswordDto.email },
+      where: { userId: findUser.id },
     });
+
+    const hashOtp = await hashPassword(random6DigitOTP.toString());
 
     if (findOtp) {
       const isOtpExpire = new Date() >= new Date(findOtp?.expireAt);
@@ -175,18 +179,18 @@ export class AuthService {
 
       // Update existing OTP
       await this.prisma.otp.update({
-        where: { email: forgotPasswordDto.email },
+        where: { id: findOtp.id },
         data: {
           expireAt: new Date(Date.now() + 60 * 1000),
-          otp: random6DigitOTP,
+          otp: hashOtp,
           createdAt: new Date(),
         },
       });
     } else {
       await this.prisma.otp.create({
         data: {
-          otp: random6DigitOTP,
-          email: forgotPasswordDto.email,
+          otp: hashOtp,
+          userId: findUser.id,
           expireAt: new Date(Date.now() + 60 * 1000),
         },
       });
@@ -220,7 +224,7 @@ export class AuthService {
 
     //Find OTP from otp table
     const findOtp = await this.prisma.otp.findFirst({
-      where: { email: verifyOtpDto.email, otp: +verifyOtpDto.otp },
+      where: { userId: findUser?.id },
     });
 
     //if otp is not found,it means otp expire, because of expired otp is been removed from database
@@ -241,7 +245,8 @@ export class AuthService {
     }
 
     if (findUser) {
-      const isOtpSame: boolean = +verifyOtpDto.otp === findOtp?.otp;
+      const isOtpSame = await compare(verifyOtpDto.otp.toString(), findOtp.otp);
+
       if (isOtpSame) {
         //Generate jwt token with expiry of 10 min
         const resetToken = this.jwtService.sign(findUser, { expiresIn: '10m' });
@@ -300,7 +305,7 @@ export class AuthService {
   }
 
   // OTP will expire in 30 seconds and remove from database in 1 minute
-  @Cron(CronExpression.EVERY_10_SECONDS) // Runs every 10 minute
+  @Cron(CronExpression.EVERY_10_MINUTES) // Runs every 10 minute
   async deleteOtp() {
     try {
       await this.prisma.otp.deleteMany({
