@@ -1,4 +1,11 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
@@ -7,6 +14,8 @@ import { successMessages } from 'src/utils/response.messages';
 import { SharedService } from 'src/services/shared.service';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { type Request } from 'express';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -68,6 +77,19 @@ export class AuthController {
     );
   }
 
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  async changePassword(
+    @Body() changePasswordDto: ChangePasswordDto,
+    @Req() request: Request,
+  ) {
+    await this.authService.changePassword(changePasswordDto, request.user.id);
+    return this.sharedService.sendSuccess(
+      successMessages.PASSWORD_CHANGE_SUCCESSFULLY,
+      HttpStatus.OK,
+    );
+  }
+
   @Post('resend-otp')
   @HttpCode(HttpStatus.OK)
   async resendOTP(@Body() resendOtpDto: ForgotPasswordDto) {
@@ -76,6 +98,28 @@ export class AuthController {
       successMessages.OTP_SEND_SUCCESSFULLY,
       HttpStatus.OK,
       { otp },
+    );
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(@Req() request: Request) {
+    const token = request.headers.authorization?.split(' ')[1];
+    await this.authService.logout(request.user.id, token!);
+    return this.sharedService.sendSuccess(
+      successMessages.LOGOUT_SUCCESSFULLY,
+      HttpStatus.OK,
+    );
+  }
+
+  @Post('refresh-token')
+  @HttpCode(HttpStatus.OK)
+  async refreshToken(@Body() body: { refreshToken: string }) {
+    const tokens = await this.authService.refreshToken(body.refreshToken);
+    return this.sharedService.sendSuccess(
+      successMessages.TOKENS_REFRESH_SUCCESSFULLY,
+      HttpStatus.OK,
+      tokens,
     );
   }
 }

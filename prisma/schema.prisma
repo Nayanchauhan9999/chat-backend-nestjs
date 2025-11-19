@@ -22,7 +22,6 @@ model User {
   email        String    @unique
   phone        String    @unique
   password     String
-  token        String?
   isDeleted    Boolean   @default(false)
   profileImage String?
   roleId       String?
@@ -30,6 +29,7 @@ model User {
   Room         Room?     @relation(fields: [roomId], references: [id])
   roomId       String?
   Message      Message[]
+  tokens       Token[]
 
   @@index([email])
   @@index([phone])
@@ -40,7 +40,7 @@ model User {
 //Otp Model
 model Otp {
   id        Int      @id @default(autoincrement())
-  otp       String  
+  otp       String
   userId    String   @unique
   createdAt DateTime @default(now())
   expireAt  DateTime
@@ -119,4 +119,19 @@ model Room {
   messageId   String?
 
   @@index([createdBy, roomType, name])
+}
+
+model Token {
+  id String @id @default(uuid())
+
+  token String @unique
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  expiredAt DateTime
+  createdAt DateTime @default(now())
+  updateAt  DateTime @updatedAt()
+
+  @@index([userId, expiredAt])
 }

@@ -37,8 +37,13 @@ export class UsersController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
+  async findUserById(@Param('id') id: string) {
+    const usersList = await this.usersService.findUserById(id);
+    return this.sharedService.sendSuccess(
+      successMessages.USERS_DETAIL_FETCH_SUCCESSFULLY,
+      HttpStatus.OK,
+      usersList,
+    );
   }
 
   @Patch(':id')

@@ -2,7 +2,13 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
-import { hashPassword, isPasswordSame } from 'src/utils/constant';
+import {
+  ACCESS_TOKEN_EXPIRY_TIME,
+  BCRYPT_SALT_ROUNDS,
+  hashPassword,
+  isPasswordSame,
+  REFRESH_TOKEN_EXPIRY_TIME,
+} from 'src/utils/constant';
 import { errorMessages } from 'src/utils/response.messages';
 import { MailService } from 'src/services/mail.service';
 import { SharedService } from 'src/services/shared.service';
@@ -13,8 +19,10 @@ import { Logger } from 'winston';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { compare } from 'bcrypt';
+import { compare, hash } from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
+import { JwtPayload } from 'jsonwebtoken';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -41,14 +49,13 @@ export class AuthService {
     });
 
     // Generate JWT token
-    const token = this.jwtService.sign({ id: user.id });
+    // const token = this.jwtService.sign({ id: user.id });
+    const { accessToken, refreshToken } = await this.getTokens(user.id);
+    const hashedRefreshToken = await hash(refreshToken, BCRYPT_SALT_ROUNDS);
 
-    // Update user with token
-    return this.prisma.user.update({
-      where: { id: user.id },
-      data: { token },
-      omit: { roomId: true, isDeleted: true, password: true },
-    });
+    await this.addRefreshTokenInDB(user.id, hashedRefreshToken);
+
+    return { ...user, refreshToken, accessToken };
   }
 
   //Login
@@ -77,16 +84,22 @@ export class AuthService {
       );
     }
 
-    const token = this.jwtService.sign({
-      id: findUser.id,
-    });
+    // const token = this.jwtService.sign({
+    //   id: findUser.id,
+    // });
 
-    const updatedUser = await this.prisma.user.update({
-      where: { id: findUser.id },
-      data: { token: token },
-      omit: { roomId: true, isDeleted: true, password: true },
-    });
-    return updatedUser;
+    const { accessToken, refreshToken } = await this.getTokens(findUser.id);
+
+    await this.addRefreshTokenInDB(findUser.id, refreshToken);
+
+    // const updatedUser = await this.prisma.user.update({
+    //   where: { id: findUser.id },
+    //   data: { token: token },
+    //   omit: { roomId: true, isDeleted: true, password: true },
+    // });
+    // return updatedUser;
+
+    return { ...findUser, accessToken, refreshToken };
   }
 
   //forgot Password
@@ -140,7 +153,7 @@ export class AuthService {
       });
     }
 
-    await this.mailService.sendOtpMail(findUser.email, random6DigitOTP);
+    // await this.mailService.sendOtpMail(findUser.email, random6DigitOTP);
 
     return random6DigitOTP;
   }
@@ -196,14 +209,14 @@ export class AuthService {
       });
     }
 
-    try {
-      await this.mailService.sendOtpMail(
-        'nayan@sevensquaretech.com',
-        random6DigitOTP,
-      );
-    } catch {
-      return this.sharedService.sendError(errorMessages.SOMETHING_WENT_WRONG);
-    }
+    // try {
+    //   await this.mailService.sendOtpMail(
+    //     'nayan@sevensquaretech.com',
+    //     random6DigitOTP,
+    //   );
+    // } catch {
+    //   return this.sharedService.sendError(errorMessages.SOMETHING_WENT_WRONG);
+    // }
     return random6DigitOTP;
   }
 
@@ -304,6 +317,93 @@ export class AuthService {
     }
   }
 
+  //Reset Password
+  async logout(userId: string, accessToken: string) {
+    const allTokens = await this.prisma.token.findMany({ where: { userId } });
+
+    for (const token of allTokens) {
+      const isMatch = await compare(accessToken, token.token);
+
+      if (isMatch) {
+        await this.prisma.token.delete({ where: { id: token.id } });
+        return;
+      }
+    }
+
+    // const deletedToken = await this.prisma.token.delete({
+    //   where: { token: token },
+    // });
+  }
+
+  //Helper Functions
+
+  //Generate Access Token & Refresh token
+  async getTokens(userId: string): Promise<{
+    accessToken: string;
+    refreshToken: string;
+  }> {
+    const payload: JwtPayload = { id: userId };
+
+    const accessToken = await this.jwtService.signAsync(payload, {
+      expiresIn: ACCESS_TOKEN_EXPIRY_TIME.seconds,
+    });
+
+    const refreshToken = await this.jwtService.signAsync(
+      { id: userId },
+      { expiresIn: REFRESH_TOKEN_EXPIRY_TIME.seconds },
+    );
+
+    return { accessToken, refreshToken };
+  }
+
+  async addRefreshTokenInDB(userId: string, refreshToken: string) {
+    const hashedToken = await hash(refreshToken, BCRYPT_SALT_ROUNDS);
+    await this.prisma.token.create({
+      data: {
+        token: hashedToken,
+        expiredAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRY_TIME.ms),
+        userId,
+      },
+    });
+  }
+
+  async refreshToken(refToken: string) {
+    const { id } = this.jwtService.verify<{ id: string }>(refToken);
+    const tokens = await this.getTokens(id);
+
+    await this.addRefreshTokenInDB(id, tokens.refreshToken);
+    return tokens;
+  }
+
+  async changePassword(changePasswordDto: ChangePasswordDto, userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (user?.password) {
+      const isSamePassword = await compare(
+        changePasswordDto.oldPassword,
+        user?.password,
+      );
+
+      if (isSamePassword) {
+        const hashNewPassword = await hash(
+          changePasswordDto.newPassword,
+          BCRYPT_SALT_ROUNDS,
+        );
+
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { password: hashNewPassword },
+        });
+      } else {
+        this.sharedService.sendError(
+          errorMessages.OLD_PASSWORD_DOES_NOT_MATCHED,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+  }
+
+  // Cron Jobs
   // OTP will expire in 30 seconds and remove from database in 1 minute
   @Cron(CronExpression.EVERY_10_MINUTES) // Runs every 10 minute
   async deleteOtp() {
@@ -313,6 +413,18 @@ export class AuthService {
       });
     } catch (error) {
       console.log('error while delete otp', error);
+    }
+  }
+
+  // Clear expired tokens from database
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async removeExpiredTokens() {
+    try {
+      await this.prisma.token.deleteMany({
+        where: { expiredAt: { lt: new Date() } },
+      });
+    } catch (error) {
+      console.log('error while delete expired token', error);
     }
   }
 }

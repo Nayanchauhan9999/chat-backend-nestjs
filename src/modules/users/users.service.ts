@@ -1,10 +1,11 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/services/prisma.service';
 import { SharedService } from 'src/services/shared.service';
 import { Logger } from 'winston';
-import { errorMessages, successMessages } from 'src/utils/response.messages';
+import { errorMessages } from 'src/utils/response.messages';
+import { isUUID } from 'class-validator';
 
 @Injectable()
 export class UsersService {
@@ -26,8 +27,29 @@ export class UsersService {
     }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findUserById(userId: string) {
+    if (!userId || !isUUID(userId)) {
+      return this.sharedService.sendError(
+        errorMessages.INVALID_OR_MISSING_ID,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const userDetail = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+      omit: { roomId: true, isDeleted: true, password: true },
+    });
+
+    if (!userDetail) {
+      return this.sharedService.sendError(
+        errorMessages.DATA_NOT_FOUND,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return userDetail;
   }
 
   update(id: number, updateUserDto: UpdateUserDto) {

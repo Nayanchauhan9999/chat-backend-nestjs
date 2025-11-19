@@ -131,6 +131,27 @@ function getPagination({
 
 const DEFAULT_DATA_LENGTH = 10;
 
+const MINUTE = 60;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
+const ACCESS_TOKEN_EXPIRY_TIME = {
+  jwtTime: '15m',
+  ms: 1000 * MINUTE * 15,
+  seconds: MINUTE * 15,
+  date: new Date(Date.now() + 1000 * MINUTE * 15),
+};
+
+const REFRESH_TOKEN_EXPIRY_TIME = {
+  jwtTime: '7d',
+  ms: 1000 * DAY * 7,
+  seconds: DAY * 7,
+  date: new Date(Date.now() + 1000 * DAY * 7),
+};
+
+// const REFRESH_TOKEN_EXPIRY_TIME = '7d';
+const BCRYPT_SALT_ROUNDS = 10;
+
 const publicRoutes = [
   '/auth/login',
   '/auth/register',
@@ -138,6 +159,7 @@ const publicRoutes = [
   '/auth/verify-otp',
   '/auth/reset-password',
   '/auth/resend-otp',
+  '/auth/refresh-token',
 ];
 
 enum EnvironmentVariablesEnum {
@@ -160,4 +182,7 @@ export {
   DEFAULT_DATA_LENGTH,
   publicRoutes,
   EnvironmentVariablesEnum,
+  ACCESS_TOKEN_EXPIRY_TIME,
+  REFRESH_TOKEN_EXPIRY_TIME,
+  BCRYPT_SALT_ROUNDS,
 };

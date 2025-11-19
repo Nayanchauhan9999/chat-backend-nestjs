@@ -24,18 +24,22 @@ export const errorMessages = {
     'At least two users are required to create a room',
   INVALID_MESSAGE_TYPE: 'Invalid message type',
   TEXT_CAN_NOT_BE_EMPTY: 'Text can not be empty',
+  OLD_PASSWORD_DOES_NOT_MATCHED: 'Old Password does not match',
 };
 
 export const successMessages = {
   PASSWORD_CHANGE_SUCCESSFULLY: 'Password change successfully',
   OTP_SEND_SUCCESSFULLY: 'OTP sent successfully to your email',
+  LOGOUT_SUCCESSFULLY: 'Logout successful',
   OTP_VERIFIED_SUCCESSFULLY: 'OTP Verified successfully',
   LOGIN_SUCCESSFULLY: 'Login successfully',
   SIGNUP_SUCCESSFULLY: 'Signup successfully',
   PASSWORD_RESET_SUCCESSFULLY: 'Password reset successfully',
+  TOKENS_REFRESH_SUCCESSFULLY: 'Token refresh successfully',
 
   //users
   USERS_FETCH_SUCCESSFULLY: 'Users fetch successfully',
+  USERS_DETAIL_FETCH_SUCCESSFULLY: 'Users detail fetch successfully',
   FETCH_SUCCESSFULLY: 'Fetch successfully',
   ROOM_SUCCESSFULLY: 'Room updated successfully',
   ROOM_DELETED_SUCCESSFULLY: 'Room deleted successfully',
