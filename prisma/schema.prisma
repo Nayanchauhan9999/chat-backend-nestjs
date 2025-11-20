@@ -63,22 +63,22 @@ enum MessageStatus {
 }
 
 model Message {
-  id          String        @id @default(uuid())
-  text        String?
-  senderId    String
-  sender      User?         @relation(fields: [senderId], references: [id])
-  createdAt   DateTime      @default(now())
-  roomId      String
-  room        Room          @relation(fields: [roomId], references: [id])
-  messageType MessageType   @default(TEXT)
-  isDeleted   Boolean       @default(false)
-  status      MessageStatus @default(SENT)
-  isEdited    Boolean       @default(false)
-  updatedAt   DateTime      @updatedAt
-  replyTo     Message?      @relation("MessageReplies", fields: [replyToId], references: [id])
-  replyToId   String?
-  replies     Message[]     @relation("MessageReplies")
-  // roomLastMessage Room?
+  id              String        @id @default(uuid())
+  text            String?
+  senderId        String
+  sender          User?         @relation(fields: [senderId], references: [id])
+  createdAt       DateTime      @default(now())
+  roomId          String
+  room            Room          @relation(fields: [roomId], references: [id])
+  messageType     MessageType   @default(TEXT)
+  isDeleted       Boolean       @default(false)
+  status          MessageStatus @default(SENT)
+  isEdited        Boolean       @default(false)
+  updatedAt       DateTime      @updatedAt
+  replyTo         Message?      @relation("MessageReplies", fields: [replyToId], references: [id])
+  replyToId       String?
+  replies         Message[]     @relation("MessageReplies")
+  roomLastMessage Room?         @relation("roomLastMessage")
 
   @@index([roomId])
   @@index([senderId])
@@ -119,9 +119,10 @@ model Room {
   unreadMessagesCount Int      @default(0)
   isPinned            Boolean  @default(false)
 
-  // lastMessage Message?  @relation(fields: [messageId], references: [id])
-  // messageId   String?
-  messages    Message[]
+  messageId   String?  @unique
+  lastMessage Message? @relation("roomLastMessage", fields: [messageId], references: [id])
+
+  messages Message[]
 
   @@index([createdBy, roomType, name])
 }

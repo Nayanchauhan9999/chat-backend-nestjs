@@ -37,7 +37,7 @@ export class PrismaExceptionFilter extends BaseExceptionFilter {
         case 'P2003':
           return response.status(HttpStatus.BAD_REQUEST).json({
             status: HttpStatus.BAD_REQUEST,
-            message: 'Foreign key constraint failed',
+            message: 'Invalid reference. Some required records do not exist',
           });
 
         case 'P2018':
