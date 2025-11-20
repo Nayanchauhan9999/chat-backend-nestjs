@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -10,7 +11,7 @@ import {
   REFRESH_TOKEN_EXPIRY_TIME,
 } from 'src/utils/constant';
 import { errorMessages } from 'src/utils/response.messages';
-import { MailService } from 'src/services/mail.service';
+// import { MailService } from 'src/services/mail.service';
 import { SharedService } from 'src/services/shared.service';
 import { User } from 'generated/prisma';
 import { PrismaService } from 'src/services/prisma.service';
@@ -20,19 +21,19 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { compare, hash } from 'bcrypt';
-import { ConfigService } from '@nestjs/config';
+// import { ConfigService } from '@nestjs/config';
 import { JwtPayload } from 'jsonwebtoken';
 import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private mailService: MailService,
+    // private mailService: MailService,
     private sharedService: SharedService,
     private prisma: PrismaService,
     private jwtService: JwtService,
     @Inject('winston') private logger: Logger,
-    private configService: ConfigService,
+    // private configService: ConfigService,
   ) {}
 
   //Register
@@ -46,14 +47,30 @@ export class AuthService {
         ...createUserDto,
         password: hashedPassword,
       },
+      omit: {
+        isDeleted: true,
+        password: true,
+      },
     });
 
-    // Generate JWT token
-    // const token = this.jwtService.sign({ id: user.id });
+    // Generate JWT auth tokens
     const { accessToken, refreshToken } = await this.getTokens(user.id);
     const hashedRefreshToken = await hash(refreshToken, BCRYPT_SALT_ROUNDS);
 
     await this.addRefreshTokenInDB(user.id, hashedRefreshToken);
+
+    try {
+      await this.prisma.room.create({
+        data: {
+          createdBy: user.id,
+          name: `+91${user.phone}(You)`,
+          roomType: 'SELF',
+          members: { create: [{ userId: user.id }] },
+        },
+      });
+    } catch (error) {
+      console.log('Error while create room', error);
+    }
 
     return { ...user, refreshToken, accessToken };
   }
@@ -62,19 +79,30 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const { phone, password, email } = loginDto;
 
-    const findUser = await this.prisma.user.findFirst({
+    let user: Omit<User, 'roomId' | 'isDeleted'> | null;
+
+    user = await this.prisma.user.findFirst({
       where: { OR: [{ phone }, { email }] },
+      omit: { isDeleted: true },
     });
 
     // ❌ No user found
-    if (!findUser) {
+    if (!user) {
       return this.sharedService.sendError(
         errorMessages.USER_NOT_FOUND,
         HttpStatus.BAD_REQUEST,
       );
     }
 
-    const isPasswordMatch = await isPasswordSame(password, findUser.password);
+    if (loginDto.fcmToken) {
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: { fcmToken: loginDto.fcmToken },
+        omit: { isDeleted: true },
+      });
+    }
+
+    const isPasswordMatch = await isPasswordSame(password, user.password);
 
     // 🔐 Check password
     if (!isPasswordMatch) {
@@ -84,22 +112,14 @@ export class AuthService {
       );
     }
 
-    // const token = this.jwtService.sign({
-    //   id: findUser.id,
-    // });
+    const { accessToken, refreshToken } = await this.getTokens(user.id);
 
-    const { accessToken, refreshToken } = await this.getTokens(findUser.id);
+    await this.addRefreshTokenInDB(user.id, refreshToken);
 
-    await this.addRefreshTokenInDB(findUser.id, refreshToken);
+    // ✅ Destructure to exclude password, using rest operator
+    const { password: _, ...userWithoutPassword } = user;
 
-    // const updatedUser = await this.prisma.user.update({
-    //   where: { id: findUser.id },
-    //   data: { token: token },
-    //   omit: { roomId: true, isDeleted: true, password: true },
-    // });
-    // return updatedUser;
-
-    return { ...findUser, accessToken, refreshToken };
+    return { ...userWithoutPassword, accessToken, refreshToken };
   }
 
   //forgot Password

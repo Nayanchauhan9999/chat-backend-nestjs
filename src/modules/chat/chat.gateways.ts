@@ -95,7 +95,7 @@ export class ChatGateway {
       const existingRoom = await this.prisma.room.findFirst({
         where: {
           roomType: RoomType.PRIVATE,
-          users: { every: { id: { in: users } } },
+          members: { every: { id: { in: users } } },
         },
         omit: { messageId: true, updatedAt: true },
       });
@@ -114,7 +114,7 @@ export class ChatGateway {
           ? createRoomDto.roomType
           : RoomType.PRIVATE,
         name: createRoomDto.name ? createRoomDto.name : null,
-        users: {
+        members: {
           connect: users.map((id: string) => ({ id })),
         },
         createdBy: socket.handshake.query?.userId as string,

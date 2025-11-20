@@ -7,7 +7,6 @@ import { SharedModule } from './modules/shared.module';
 import { WinstonModule } from 'nest-winston';
 import winston from 'winston';
 import { ScheduleModule } from '@nestjs/schedule';
-import { RolesModule } from './modules/roles/roles.module';
 import { AppService } from './app.service';
 import { AppController } from './app.controller';
 import { UsersModule } from './modules/users/users.module';
@@ -47,7 +46,6 @@ import { AuthGuard } from './guards/auth.guard';
     AuthModule,
     EmailModule,
     SharedModule,
-    RolesModule,
     UsersModule,
     RoomModule,
   ],

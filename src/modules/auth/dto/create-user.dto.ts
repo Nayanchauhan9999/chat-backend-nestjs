@@ -1,4 +1,10 @@
-import { IsDefined, IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import {
+  IsDefined,
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateUserDto {
   @IsDefined({ message: 'First name is required' })
@@ -25,4 +31,8 @@ export class CreateUserDto {
   @IsNotEmpty({ message: 'Password should not be empty' })
   @IsString()
   password: string;
+
+  @IsOptional()
+  @IsString({ message: 'FCM token should be string' })
+  fcmToken?: string;
 }

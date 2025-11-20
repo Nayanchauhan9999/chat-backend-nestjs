@@ -1,6 +1,4 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/services/prisma.service';
 import { SharedService } from 'src/services/shared.service';
 import { Logger } from 'winston';
@@ -15,7 +13,7 @@ export class UsersService {
     @Inject('winston') private logger: Logger,
   ) {}
 
-  create(createUserDto: CreateUserDto) {
+  create() {
     return 'This action adds a new user';
   }
 
@@ -39,7 +37,7 @@ export class UsersService {
       where: {
         id: userId,
       },
-      omit: { roomId: true, isDeleted: true, password: true },
+      omit: { isDeleted: true, password: true },
     });
 
     if (!userDetail) {
@@ -52,7 +50,7 @@ export class UsersService {
     return userDetail;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
+  update(id: string) {
     return `This action updates a #${id} user`;
   }
 

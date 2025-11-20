@@ -18,7 +18,7 @@ import { successMessages } from 'src/utils/response.messages';
 import type { IPagination } from '../chat/interfaces/chat.interface';
 import type { Request } from 'express';
 
-@Controller('room')
+@Controller('rooms')
 export class RoomController {
   constructor(
     private readonly roomService: RoomService,
@@ -29,13 +29,13 @@ export class RoomController {
   async create(@Body() createRoomDto: CreateRoomDto, @Req() request: Request) {
     const room = await this.roomService.create(createRoomDto, request.user.id);
     return this.sharedService.sendSuccess(
-      successMessages.FETCH_SUCCESSFULLY,
+      successMessages.ROOM_CREATED_SUCCESSFULLY,
       HttpStatus.CREATED,
       room,
     );
   }
 
-  @Get('list')
+  @Get()
   async findAll(@Query() query: IPagination, @Req() request: Request) {
     const roomList = await this.roomService.getRoomList(query, request.user.id);
     return this.sharedService.sendSuccess(

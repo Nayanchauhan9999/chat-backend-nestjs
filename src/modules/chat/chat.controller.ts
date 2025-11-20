@@ -25,7 +25,6 @@ export class ChatController {
 
   @Post('send-message')
   async create(@Body() sendMessageDto: SendMessageDto, @Req() req: Request) {
-    console.log('user id', req.user);
     const message = await this.chatService.sendMessage(
       sendMessageDto,
       req.user.id,

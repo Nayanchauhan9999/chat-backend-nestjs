@@ -7,7 +7,6 @@ import { errorMessages } from 'src/utils/response.messages';
 export class WsExceptionsFilter extends BaseWsExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const client = host.switchToWs().getClient<Socket>();
-    const data = host.switchToWs().getData();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message: string = errorMessages.INTERNAL_SERVER_ERROR;

@@ -48,11 +48,14 @@ export class RoomService {
     }
 
     //if room is private, ensure similar room doesn't exist
-    if (createRoomDto.roomType === RoomType.PRIVATE) {
+    if (
+      createRoomDto.roomType === RoomType.PRIVATE ||
+      createRoomDto.roomType === RoomType.SELF
+    ) {
       const existingRoom = await this.prisma.room.findFirst({
         where: {
           roomType: RoomType.PRIVATE,
-          users: { every: { id: { in: users } } },
+          members: { every: { id: { in: users } } },
         },
         omit: { messageId: true, updatedAt: true },
       });
@@ -71,7 +74,7 @@ export class RoomService {
           ? createRoomDto.roomType
           : RoomType.PRIVATE,
         name: createRoomDto.name ? createRoomDto.name : null,
-        users: {
+        members: {
           connect: users.map((id: string) => ({ id })),
         },
         createdBy: userId,
@@ -86,7 +89,7 @@ export class RoomService {
     try {
       const take = query.take ? query.take : DEFAULT_DATA_LENGTH;
       const rooms = await this.prisma.room.findMany({
-        where: { users: { some: { id: userId } } },
+        where: { members: { some: { userId } } },
         include: {
           lastMessage: true,
         },
@@ -94,8 +97,10 @@ export class RoomService {
         take: +take,
         skip: take * (query?.page ? query.page : 1 - 1),
       });
+
+      console.log('Rooms', rooms);
       const totalData = await this.prisma.room.count({
-        where: { users: { some: { id: userId } } },
+        where: { members: { some: { id: userId } } },
       });
 
       return {
@@ -118,21 +123,24 @@ export class RoomService {
     const roomData = await this.prisma.room.findFirst({
       where: {
         id: roomId,
-        users: {
+        members: {
           some: {
             id: userId,
           },
         },
       },
       include: {
-        users: {
+        members: {
           select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-            profileImage: true,
-            email: true,
+            user: {
+              select: {
+                firstName: true,
+                lastName: true,
+                phone: true,
+                profileImage: true,
+                email: true,
+              },
+            },
           },
         },
       },

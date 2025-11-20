@@ -16,20 +16,20 @@ datasource db {
 
 //User Model
 model User {
-  id           String    @id @default(uuid())
+  id           String   @id @default(uuid())
   firstName    String
   lastName     String
-  email        String    @unique
-  phone        String    @unique
+  email        String   @unique
+  phone        String   @unique
   password     String
-  isDeleted    Boolean   @default(false)
+  isDeleted    Boolean  @default(false)
   profileImage String?
-  roleId       String?
-  createdAt    DateTime  @default(now())
-  Room         Room?     @relation(fields: [roomId], references: [id])
-  roomId       String?
-  Message      Message[]
-  tokens       Token[]
+  fcmToken     String?
+  createdAt    DateTime @default(now())
+
+  roomMembers RoomMember[]
+  Message     Message[]
+  tokens      Token[]
 
   @@index([email])
   @@index([phone])
@@ -46,20 +46,6 @@ model Otp {
   expireAt  DateTime
 
   @@index([userId])
-}
-
-enum RoleType {
-  CUSTOM
-  FIXED
-}
-
-model Role {
-  id         String  @id @default(uuid())
-  roleName   String  @unique
-  isFixed    Boolean @default(false)
-  userCount  Int?    @default(0)
-  status     Boolean @default(true)
-  permission Json
 }
 
 enum MessageType {
@@ -82,8 +68,8 @@ model Message {
   senderId    String
   sender      User?         @relation(fields: [senderId], references: [id])
   createdAt   DateTime      @default(now())
-  roomId      String?
-  Room        Room[]
+  roomId      String
+  room        Room          @relation(fields: [roomId], references: [id])
   messageType MessageType   @default(TEXT)
   isDeleted   Boolean       @default(false)
   status      MessageStatus @default(SENT)
@@ -92,22 +78,40 @@ model Message {
   replyTo     Message?      @relation("MessageReplies", fields: [replyToId], references: [id])
   replyToId   String?
   replies     Message[]     @relation("MessageReplies")
+  // roomLastMessage Room?
 
   @@index([roomId])
   @@index([senderId])
 }
 
+// Don't use `SELF` anywhere
 enum RoomType {
+  SELF
   PRIVATE
   GROUP
   CHANNEL
 }
 
+// Joint table for room and user
+model RoomMember {
+  id String @id @default(uuid())
+
+  roomId String
+  room   Room   @relation(fields: [roomId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([roomId, userId])
+}
+
 model Room {
-  id        String  @id @default(uuid())
+  id        String       @id @default(uuid())
   name      String?
   createdBy String
-  users     User[]
+  members   RoomMember[]
 
   roomType            RoomType @default(PRIVATE)
   createdAt           DateTime @default(now())
@@ -115,8 +119,9 @@ model Room {
   unreadMessagesCount Int      @default(0)
   isPinned            Boolean  @default(false)
 
-  lastMessage Message? @relation(fields: [messageId], references: [id])
-  messageId   String?
+  // lastMessage Message?  @relation(fields: [messageId], references: [id])
+  // messageId   String?
+  messages    Message[]
 
   @@index([createdBy, roomType, name])
 }

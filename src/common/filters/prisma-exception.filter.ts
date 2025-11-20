@@ -22,7 +22,7 @@ export class PrismaExceptionFilter extends BaseExceptionFilter {
       switch (exception.code) {
         case 'P2002':
           // User tried to create a record with a unique field that already exists
-          return response.status(HttpStatus.CONFLICT).json({
+          return response.status(HttpStatus.BAD_REQUEST).json({
             status: HttpStatus.BAD_REQUEST, // 409 Conflict status code : but used 400
             message: String(exception?.meta?.target) + ' already exists',
           });
@@ -38,6 +38,12 @@ export class PrismaExceptionFilter extends BaseExceptionFilter {
           return response.status(HttpStatus.BAD_REQUEST).json({
             status: HttpStatus.BAD_REQUEST,
             message: 'Foreign key constraint failed',
+          });
+
+        case 'P2018':
+          return response.status(HttpStatus.BAD_REQUEST).json({
+            status: HttpStatus.BAD_REQUEST,
+            message: 'Invalid or missing related records',
           });
 
         default:

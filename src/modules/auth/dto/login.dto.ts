@@ -2,6 +2,7 @@ import {
   IsDefined,
   IsEmail,
   IsNotEmpty,
+  IsOptional,
   IsString,
   ValidateIf,
 } from 'class-validator';
@@ -24,4 +25,8 @@ export class LoginDto {
   @IsNotEmpty()
   @IsString()
   password: string;
+
+  @IsOptional()
+  @IsString({ message: 'FCM token should be string' })
+  fcmToken?: string;
 }

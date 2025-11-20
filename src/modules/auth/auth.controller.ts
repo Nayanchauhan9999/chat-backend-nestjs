@@ -24,8 +24,8 @@ export class AuthController {
     private sharedService: SharedService,
   ) {}
 
-  @Post('register')
-  async register(@Body() createUserDto: CreateUserDto) {
+  @Post('sign-up')
+  async signUp(@Body() createUserDto: CreateUserDto) {
     const userData = await this.authService.createUser(createUserDto);
     return this.sharedService.sendSuccess(
       successMessages.SIGNUP_SUCCESSFULLY,
