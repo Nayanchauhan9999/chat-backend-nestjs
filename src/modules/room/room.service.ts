@@ -30,6 +30,8 @@ export class RoomService {
       users = [...users, ...createRoomDto.users];
     }
 
+    console.log('user', users);
+
     users = Array.from(new Set(users)); //remove duplicate user ids
 
     if (users.length < 2) {
@@ -75,7 +77,7 @@ export class RoomService {
           : RoomType.PRIVATE,
         name: createRoomDto.name ? createRoomDto.name : null,
         members: {
-          connect: users.map((id: string) => ({ id })),
+          create: users.map((userId: string) => ({ userId })),
         },
         createdBy: userId,
       },
@@ -91,14 +93,20 @@ export class RoomService {
       const rooms = await this.prisma.room.findMany({
         where: { members: { some: { userId } } },
         include: {
-          lastMessage: true,
+          lastMessage: {
+            omit: {
+              roomId: true,
+              isEdited: true,
+              updatedAt: true,
+              replyToId: true,
+            },
+          },
         },
         omit: { messageId: true, updatedAt: true },
         take: +take,
         skip: take * (query?.page ? query.page : 1 - 1),
       });
 
-      console.log('Rooms', rooms);
       const totalData = await this.prisma.room.count({
         where: { members: { some: { id: userId } } },
       });

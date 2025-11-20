@@ -62,6 +62,11 @@ export class ChatService {
             updatedAt: true,
           },
         });
+        // Update room last message
+        await this.prisma.room.update({
+          where: { id: sendMessageDto.roomId },
+          data: { lastMessage: { connect: { id: message.id } } },
+        });
         return message;
       }
       case 'IMAGE':
@@ -140,7 +145,7 @@ export class ChatService {
     };
   }
 
-  async updateMessage(updateMessageDto: UpdateMessageDto) {
+  async updateMessage(updateMessageDto: UpdateMessageDto, userId: string) {
     const getMessage = await this.prisma.message.findUnique({
       where: { id: updateMessageDto.messageId },
     });
@@ -153,8 +158,9 @@ export class ChatService {
         dataToUpdate['isEdited'] = true;
 
         const message = await this.prisma.message.update({
-          where: { id: updateMessageDto.messageId },
+          where: { id: updateMessageDto.messageId, senderId: userId },
           data: dataToUpdate,
+          omit: { roomId: true, isDeleted: true, replyToId: true },
         });
         return message;
       }

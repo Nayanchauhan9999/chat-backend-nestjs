@@ -29,8 +29,8 @@ export class PrismaExceptionFilter extends BaseExceptionFilter {
 
         case 'P2025':
           // trying to update or delete a non-existent record in the database
-          return response.status(HttpStatus.NOT_FOUND).json({
-            status: HttpStatus.NOT_FOUND,
+          return response.status(HttpStatus.BAD_REQUEST).json({
+            status: HttpStatus.BAD_REQUEST,
             message: errorMessages.RECORD_NOT_FOUND,
           });
 

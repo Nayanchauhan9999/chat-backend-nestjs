@@ -48,8 +48,14 @@ export class ChatController {
   }
 
   @Patch('update-message')
-  async editChat(@Body() updateMessageDto: UpdateMessageDto) {
-    const message = await this.chatService.updateMessage(updateMessageDto);
+  async editChat(
+    @Body() updateMessageDto: UpdateMessageDto,
+    @Req() request: Request,
+  ) {
+    const message = await this.chatService.updateMessage(
+      updateMessageDto,
+      request.user.id,
+    );
     return this.sharedService.sendSuccess(
       successMessages.MESSAGE_UPDATED_SUCCESSFULLY,
       HttpStatus.OK,
