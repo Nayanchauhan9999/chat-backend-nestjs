@@ -95,7 +95,7 @@ enum RoomType {
 // Joint table for room and user
 model RoomMember {
   id      String   @id @default(uuid())
-  isAdmin Boolean? @default(false)
+  isAdmin Boolean @default(false)
 
   roomId String
   room   Room   @relation(fields: [roomId], references: [id])

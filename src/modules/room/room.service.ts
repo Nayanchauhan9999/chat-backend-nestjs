@@ -7,7 +7,7 @@ import { errorMessages } from 'src/utils/response.messages';
 import { DEFAULT_DATA_LENGTH, getPagination } from 'src/utils/constant';
 import { IPagination } from '../chat/interfaces/chat.interface';
 import { isUUID } from 'class-validator';
-import { RoomType } from 'generated/prisma';
+import { RoomType } from 'generated/prisma/enums';
 
 @Injectable()
 export class RoomService {
@@ -29,8 +29,6 @@ export class RoomService {
     if (createRoomDto?.users && createRoomDto?.users?.length > 0) {
       users = [...users, ...createRoomDto.users];
     }
-
-    console.log('user', users);
 
     users = Array.from(new Set(users)); //remove duplicate user ids
 
@@ -77,7 +75,14 @@ export class RoomService {
           : RoomType.PRIVATE,
         name: createRoomDto.name ? createRoomDto.name : null,
         members: {
-          create: users.map((userId: string) => ({ userId })),
+          create: users.map((id: string) => ({
+            userId: id,
+            isAdmin:
+              createRoomDto.roomType === RoomType.GROUP ||
+              createRoomDto.roomType === RoomType.CHANNEL
+                ? id === userId
+                : false,
+          })),
         },
         createdBy: userId,
       },
