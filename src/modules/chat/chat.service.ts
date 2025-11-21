@@ -6,6 +6,7 @@ import { DEFAULT_DATA_LENGTH, getPagination } from 'src/utils/constant';
 import { errorMessages } from 'src/utils/response.messages';
 import { SendMessageDto } from './dto/send-message.dto';
 import { UpdateMessageDto } from './dto/update-message.dto';
+import { isUUID } from 'class-validator';
 // import { CreateChatDto } from './dto/create-chat.dto';
 // import OpenAI from 'openai';
 
@@ -204,5 +205,31 @@ export class ChatService {
     });
 
     return updatedMessage;
+  }
+
+  async deleteMessage(userId: string, messageId: string) {
+    if (!userId || !messageId || !isUUID(userId) || !isUUID(messageId)) {
+      this.sharedService.sendError(
+        errorMessages.INVALID_OR_MISSING_ID,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const deletedMessage = await this.prisma.message.delete({
+      where: { id: messageId, senderId: userId },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profileImage: true,
+          },
+        },
+      },
+      omit: { senderId: true, roomId: true },
+    });
+
+    return deletedMessage;
   }
 }

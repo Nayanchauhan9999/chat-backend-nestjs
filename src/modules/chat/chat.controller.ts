@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
+  Param,
   Patch,
   Post,
   Query,
@@ -58,6 +60,19 @@ export class ChatController {
     );
     return this.sharedService.sendSuccess(
       successMessages.MESSAGE_UPDATED_SUCCESSFULLY,
+      HttpStatus.OK,
+      message,
+    );
+  }
+
+  @Delete(':messageId')
+  async delete(@Param('messageId') messageId: string, @Req() request: Request) {
+    const message = await this.chatService.deleteMessage(
+      request.user.id,
+      messageId,
+    );
+    return this.sharedService.sendSuccess(
+      successMessages.MESSAGE_DELETE_SUCCESSFULLY,
       HttpStatus.OK,
       message,
     );
