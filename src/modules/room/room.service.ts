@@ -7,7 +7,7 @@ import { errorMessages } from 'src/utils/response.messages';
 import { DEFAULT_DATA_LENGTH, getPagination } from 'src/utils/constant';
 import { IPagination } from '../chat/interfaces/chat.interface';
 import { isUUID } from 'class-validator';
-import { RoomType } from 'generated/prisma/enums';
+import { RoomType } from 'generated/prisma';
 
 @Injectable()
 export class RoomService {

@@ -5,12 +5,13 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 //User Model
@@ -94,7 +95,7 @@ enum RoomType {
 
 // Joint table for room and user
 model RoomMember {
-  id      String   @id @default(uuid())
+  id      String  @id @default(uuid())
   isAdmin Boolean @default(false)
 
   roomId String
